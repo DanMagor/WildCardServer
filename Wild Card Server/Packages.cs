@@ -4,6 +4,7 @@
     SAlertMsg,
     SLoadMenu,
     SLoadMatch,
+    SSendCards,
 
 }
 
@@ -14,4 +15,28 @@ public enum ClientPackages
     CNewAccount,
     CSearchOpponent,
     CReadyForFight,
+}
+
+
+
+public class Card
+{
+    public enum CardTypes
+    {
+        Attack,
+        Heal,
+        Item,
+    };
+
+    public Card(string _name, CardTypes _cardType, int _damage)
+    {
+        name = _name;
+        cardType = _cardType;
+        damage = _damage;
+    }
+
+    public string name;
+    public CardTypes cardType;
+    public int damage;
+
 }

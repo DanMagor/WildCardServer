@@ -90,6 +90,7 @@ namespace Wild_Card_Server
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SLoadMatch);
+            
             //For future actions we need to know MatchID
             buffer.WriteInteger(matchID);
 
@@ -107,5 +108,24 @@ namespace Wild_Card_Server
            
             SendDataTo(connectionID, buffer.ToArray());
         }
+
+        
+        public static void PACKET_SendCards(int connectionID, Card[] cards)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SSendCards);
+            for (int i = 0; i < 4; i++)
+            {
+                buffer.WriteString(cards[i].name);
+                buffer.WriteInteger((int)cards[i].cardType);
+                buffer.WriteInteger(cards[i].damage);
+            }
+
+            SendDataTo(connectionID, buffer.ToArray());
+
+        }
+        
+
+        
     }
 }

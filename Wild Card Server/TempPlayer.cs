@@ -11,11 +11,21 @@ namespace Wild_Card_Server
         public int connectionID;
         public string username;
 
+        private bool ready = false;
+
+        public bool Ready
+        {
+            get {return ready;}
+            set {ready = value;}
+        }
+
         public TempPlayer(int _connectionID, string _username)
         {
             connectionID = _connectionID;
             username = _username;
         }
+
+        
         
     }
 }

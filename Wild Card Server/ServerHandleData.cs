@@ -14,7 +14,8 @@ namespace Wild_Card_Server
             packetListener = new Dictionary<int, Packet_>();
             packetListener.Add((int)ClientPackages.CLogin, HandleLogin);
             packetListener.Add((int)ClientPackages.CSearchOpponent, HandleSearch);
-            //Add Search Opponent Handle
+            packetListener.Add((int)ClientPackages.CReadyForFight, HandleReady);
+            
         }
 
         public static void HandleData(int connectionID, byte[] data)
@@ -132,6 +133,28 @@ namespace Wild_Card_Server
 
             Console.WriteLine("Player '{0}' started search", username);
             MatchMaker.AddPlayerToSearch(connectionId, username);
+        }
+
+        private static void HandleReady(int connectionId, byte[] data)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteBytes(data);
+            int packageID = buffer.ReadInteger();
+            int matchID = buffer.ReadInteger();
+
+            if (MatchMaker.matches[matchID].p1.connectionID == connectionId)
+            {
+                MatchMaker.matches[matchID].p1.Ready = true;
+                Console.WriteLine("Player '{0}' ready for fight", MatchMaker.matches[matchID].p1.username);
+            }
+            else
+            {
+                MatchMaker.matches[matchID].p2.Ready = true;
+                Console.WriteLine("Player '{0}' ready for fight", MatchMaker.matches[matchID].p2.username);
+            }
+
+            MatchMaker.StartMatch(matchID);
+            
         }
     }
 }
