@@ -20,7 +20,7 @@ namespace Wild_Card_Server
 
         public static void AddPlayerToSearch(int connectionID, string username)
         {
-
+            
             players.Add(new TempPlayer(connectionID, username));
             if (!isSearching)
             {
@@ -61,5 +61,7 @@ namespace Wild_Card_Server
                 matchThread.Start();
             }
         }
+
+        
     }
 }

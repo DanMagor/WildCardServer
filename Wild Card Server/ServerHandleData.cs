@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
+using MySql.Data.MySqlClient;
 
 namespace Wild_Card_Server
 {
@@ -14,7 +16,8 @@ namespace Wild_Card_Server
             packetListener = new Dictionary<int, Packet_>();
             packetListener.Add((int)ClientPackages.CLogin, HandleLogin);
             packetListener.Add((int)ClientPackages.CSearchOpponent, HandleSearch);
-            packetListener.Add((int)ClientPackages.CReadyForFight, HandleReady);
+            packetListener.Add((int)ClientPackages.CReadyForMatch, HandleReadyForMatch);
+            packetListener.Add((int)ClientPackages.CReadyForRound, HandleReadyForRound);
             
         }
 
@@ -106,6 +109,25 @@ namespace Wild_Card_Server
             string username = buffer.ReadString();
             string password = buffer.ReadString();
 
+            var mySQLConnection = new MySqlConnection(MySQL.CreateConnectionString());
+            try
+            {
+                mySQLConnection.Open();
+                Console.WriteLine("Player {0} Succesfully connected to MySQL Server '{1}'", username, mySQLConnection.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+            ArrayList allCards = Database.TakeAllCardsWithInformation(mySQLConnection); //TODO: REWORK WHEN CHANGE HEAL ITEM LOGIC
+
+            mySQLConnection.Close();
+
+            ServerTCP.PACKET_SendAllCards(connectionId, allCards);
+            
+
+
             //if (!Database.AccountExist(username))
             //{
             //    ServerTCP.PACKET_AlertMsg(connectionId, "Account doesn't exist!");
@@ -135,7 +157,7 @@ namespace Wild_Card_Server
             MatchMaker.AddPlayerToSearch(connectionId, username);
         }
 
-        private static void HandleReady(int connectionId, byte[] data)
+        private static void HandleReadyForMatch(int connectionId, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteBytes(data);
@@ -145,16 +167,35 @@ namespace Wild_Card_Server
             if (MatchMaker.matches[matchID].p1.connectionID == connectionId)
             {
                 MatchMaker.matches[matchID].p1.Ready = true;
-                Console.WriteLine("Player '{0}' ready for fight", MatchMaker.matches[matchID].p1.username);
+                Console.WriteLine("Player '{0}' ready for match", MatchMaker.matches[matchID].p1.username);
             }
             else
             {
                 MatchMaker.matches[matchID].p2.Ready = true;
-                Console.WriteLine("Player '{0}' ready for fight", MatchMaker.matches[matchID].p2.username);
+                Console.WriteLine("Player '{0}' ready for match", MatchMaker.matches[matchID].p2.username);
             }
 
             MatchMaker.StartMatch(matchID);
             
+        }
+
+        private static void HandleReadyForRound(int connectionId, byte[] data)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteBytes(data);
+            int packageID = buffer.ReadInteger();
+            int matchID = buffer.ReadInteger();
+
+            if (MatchMaker.matches[matchID].p1.connectionID == connectionId)
+            {
+                MatchMaker.matches[matchID].p1.Ready = true;
+                Console.WriteLine("Player '{0}' ready for round", MatchMaker.matches[matchID].p1.username);
+            }
+            else
+            {
+                MatchMaker.matches[matchID].p2.Ready = true;
+                Console.WriteLine("Player '{0}' ready for round", MatchMaker.matches[matchID].p2.username);
+            }
         }
     }
 }

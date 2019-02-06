@@ -4,7 +4,9 @@
     SAlertMsg,
     SLoadMenu,
     SLoadMatch,
+    SSendAllCards,
     SSendCards,
+    SStartRound,
 
 }
 
@@ -14,29 +16,9 @@ public enum ClientPackages
     CThankYou,
     CNewAccount,
     CSearchOpponent,
-    CReadyForFight,
+    CReadyForMatch,
+    CReadyForRound,
 }
 
 
 
-public class Card
-{
-    public enum CardTypes
-    {
-        Attack,
-        Heal,
-        Item,
-    };
-
-    public Card(string _name, CardTypes _cardType, int _damage)
-    {
-        name = _name;
-        cardType = _cardType;
-        damage = _damage;
-    }
-
-    public string name;
-    public CardTypes cardType;
-    public int damage;
-
-}

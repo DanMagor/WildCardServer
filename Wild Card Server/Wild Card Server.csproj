@@ -36,6 +36,9 @@
     <Reference Include="KG Buffer">
       <HintPath>dll\KG Buffer.dll</HintPath>
     </Reference>
+    <Reference Include="MySql.Data">
+      <HintPath>..\..\ClashRoyale Sercer\ClashRoyale Sercer\dll\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -51,7 +54,9 @@
   <ItemGroup>
     <Compile Include="ClientObject.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Database.cs" />
     <Compile Include="MatchMaker.cs" />
+    <Compile Include="MySQL.cs" />
     <Compile Include="Packages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

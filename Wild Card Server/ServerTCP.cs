@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Net;
 using System.Net.Sockets;
 
@@ -11,7 +12,7 @@ namespace Wild_Card_Server
 
         public static void InitializeServer()
         {
-            //InitializeMySQLServer();
+            InitializeMySQLServer();
             InitializeClientObjects();
             InitializeServerSocket();
         }
@@ -21,6 +22,15 @@ namespace Wild_Card_Server
             serverSocket = new TcpListener(IPAddress.Any, 5555);
             serverSocket.Start();
             serverSocket.BeginAcceptTcpClient(new AsyncCallback(ClientConnectCallback), null);
+        }
+        private static void InitializeMySQLServer()
+        {
+            MySQL.mySQLSettings.user = "root";
+            MySQL.mySQLSettings.password = "";
+            MySQL.mySQLSettings.server = "localhost";
+            MySQL.mySQLSettings.database = "Wild Card";
+
+            MySQL.ConntectToMySQL();
         }
 
         private static void ClientConnectCallback(IAsyncResult result)
@@ -109,21 +119,52 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        
-        public static void PACKET_SendCards(int connectionID, Card[] cards)
+        public static void PACKET_SendAllCards(int connectionID, ArrayList allCards)
         {
             ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SSendCards);
-            for (int i = 0; i < 4; i++)
-            {
-                buffer.WriteString(cards[i].name);
-                buffer.WriteInteger((int)cards[i].cardType);
-                buffer.WriteInteger(cards[i].damage);
-            }
+            buffer.WriteInteger((int)ServerPackages.SSendAllCards);
+            buffer.WriteInteger(allCards.Count / 4); //TODO: Change. TEMP Cause There is 4 Fields
 
+            foreach (var card_info in allCards)
+            {
+                if (card_info is int)
+                {
+                    buffer.WriteInteger((int)card_info);
+                }
+                else
+                {
+                    buffer.WriteString((string)card_info);
+                }
+            }
             SendDataTo(connectionID, buffer.ToArray());
 
         }
+
+        public static void PACKET_SendCards(int connectionID, ArrayList cards)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SSendCards);
+            buffer.WriteInteger(cards.Count);
+
+            foreach (int card_id in cards)
+            {
+                buffer.WriteInteger(card_id);
+            }
+            SendDataTo(connectionID, buffer.ToArray());
+
+        }
+
+       public static void PACKET_StartRound(int connectionID)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SStartRound);
+
+            SendDataTo(connectionID, buffer.ToArray());
+        }
+
+
+
+        
         
 
         
