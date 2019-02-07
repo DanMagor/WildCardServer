@@ -7,6 +7,7 @@
     SSendAllCards,
     SSendCards,
     SStartRound,
+    SShowResult,
 
 }
 
@@ -19,6 +20,4 @@ public enum ClientPackages
     CReadyForMatch,
     CReadyForRound,
 }
-
-
 

@@ -56,17 +56,31 @@ namespace Wild_Card_Server
 
         public void StartRound()
         {
+            DateTime roundStartTIme;
+            //roundStartTIme = DateTime.Now.Add(TimeSpan.FromSeconds(Constants.LENGTH_OF_ROUND));
             while (isActive)
             {
+
                 //Wait while client Catch Cards
-                if (p1.Ready && p2.Ready)
+                if ((p1.Ready && p2.Ready))
                 {
+                    
                     SendCards();
                     p1.Ready = false;
                     p2.Ready = false;
+                    roundStartTIme = DateTime.Now;
                     ServerTCP.PACKET_StartRound(p1.connectionID);
                     ServerTCP.PACKET_StartRound(p2.connectionID);
+                    
+                    while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { Console.Write("Waiting"); Console.Clear(); }
+                    p1.Ready = false;
+                    p2.Ready = false;
+                    ServerTCP.PACKET_ShowResult(p1.connectionID);
+                    ServerTCP.PACKET_ShowResult(p2.connectionID);
+                    
+                    
                 }
+
             }
         }
 

@@ -8,6 +8,7 @@ namespace Wild_Card_Server
 {
     class TempPlayer
     {
+        
         public int connectionID;
         public string username;
 
