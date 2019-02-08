@@ -23,7 +23,7 @@ namespace Wild_Card_Server
         //private ArrayList equipment;
         //private int[] Deck;
 
-        public int selectedCardID;
+        public int selectedCardID = -1;
         private bool ready = false;
 
         public bool Ready
@@ -32,7 +32,15 @@ namespace Wild_Card_Server
             set { ready = value; }
         }
 
+        public int Health
+        {
+            get { return health; }
+        }
 
+        public int Bullets
+        {
+            get { return n_bullets; }
+        }
 
         public TempPlayer(int _connectionID, string _username, int HP = 100, int bullets = 6, ArrayList init_eff = null)
         {
@@ -45,8 +53,13 @@ namespace Wild_Card_Server
 
         public void TakeShoot(int bullets, int dmgPerBullet)
         {
-            int amountOfDamage = bullets * dmgPerBullet;
+            int amountOfDamage = dmgPerBullet * bullets;
             ReceiveDamage(amountOfDamage);
+        }
+        public void MakeShoot(int bullets)
+        {
+            if (n_bullets < 0) return;
+            n_bullets -= bullets;
         }
 
         public void ReceiveDamage(int damage)

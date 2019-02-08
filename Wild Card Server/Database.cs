@@ -108,11 +108,11 @@ namespace Wild_Card_Server
 
 
         //TODO Change Method with Connection Attribute for multople Reading
-        public static ByteBuffer TakeAttackCardInfo(int cardID)
+        public static ByteBuffer TakeAttackCardInfo(MySqlConnection connection, int cardID)
         {
             ByteBuffer buffer = new ByteBuffer();
             string query = "SELECT * from attack_cards WHERE id='" + cardID + "'";
-            MySqlCommand cmd = new MySqlCommand(query, MySQL.mySQLSettings.connection);
+            MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader reader;
 
 
@@ -142,7 +142,7 @@ namespace Wild_Card_Server
 
             Console.WriteLine("Card with ID '{0}' has {1} damage and {2} bullets", cardID, damage, bullets);
 
-            buffer.WriteInteger(cardID);
+            //buffer.WriteInteger(cardID);
             //buffer.WriteInteger((int)CardTypes.Attack);
             buffer.WriteInteger(damage);
             buffer.WriteInteger(bullets);
@@ -174,7 +174,7 @@ namespace Wild_Card_Server
             {
                 uint cardID = (uint)reader["id"];
                 resultCards.Add((int)cardID);
-                Console.WriteLine("Card with ID '{0}' was received", cardID);
+                //Console.WriteLine("Card with ID '{0}' was received", cardID);
             }
 
             reader.Close();
@@ -220,7 +220,7 @@ namespace Wild_Card_Server
             {
                 uint cardID = (uint)reader["id"];
                 resultCards.Add((int)cardID);
-                Console.WriteLine("Card with ID '{0}' was received", cardID);
+               // Console.WriteLine("Card with ID '{0}' was received", cardID);
             }
 
             reader.Close();

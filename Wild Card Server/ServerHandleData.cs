@@ -215,7 +215,7 @@ namespace Wild_Card_Server
             }
             else
             {
-                MatchMaker.matches[matchID].p1.selectedCardID = selectedCardID;
+                MatchMaker.matches[matchID].p2.selectedCardID = selectedCardID;
                 Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p2.username, selectedCardID);
             }
 

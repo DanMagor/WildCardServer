@@ -162,10 +162,12 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        public static void PACKET_ShowResult(int connectionID)
+        public static void PACKET_ShowResult(int connectionID, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SShowResult);
+            buffer.WriteBytes(data);
+            
 
             SendDataTo(connectionID, buffer.ToArray());
         }
