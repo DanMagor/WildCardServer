@@ -18,7 +18,8 @@ namespace Wild_Card_Server
             packetListener.Add((int)ClientPackages.CSearchOpponent, HandleSearch);
             packetListener.Add((int)ClientPackages.CReadyForMatch, HandleReadyForMatch);
             packetListener.Add((int)ClientPackages.CReadyForRound, HandleReadyForRound);
-            
+            packetListener.Add((int)ClientPackages.CSendSelectedCard, HandleSendSelectedCard);
+
         }
 
         public static void HandleData(int connectionID, byte[] data)
@@ -125,7 +126,7 @@ namespace Wild_Card_Server
             mySQLConnection.Close();
 
             ServerTCP.PACKET_SendAllCards(connectionId, allCards);
-            
+
 
 
             //if (!Database.AccountExist(username))
@@ -147,7 +148,7 @@ namespace Wild_Card_Server
 
         private static void HandleSearch(int connectionId, byte[] data)
         {
-            
+
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteBytes(data);
             int packageID = buffer.ReadInteger();
@@ -176,17 +177,17 @@ namespace Wild_Card_Server
             }
 
             MatchMaker.StartMatch(matchID);
-            
+
         }
 
-        private static void HandleReadyForRound(int connectionId, byte[] data)
+        private static void HandleReadyForRound(int connectionID, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteBytes(data);
             int packageID = buffer.ReadInteger();
             int matchID = buffer.ReadInteger();
 
-            if (MatchMaker.matches[matchID].p1.connectionID == connectionId)
+            if (MatchMaker.matches[matchID].p1.connectionID == connectionID)
             {
                 MatchMaker.matches[matchID].p1.Ready = true;
                 Console.WriteLine("Player '{0}' ready for round", MatchMaker.matches[matchID].p1.username);
@@ -196,6 +197,28 @@ namespace Wild_Card_Server
                 MatchMaker.matches[matchID].p2.Ready = true;
                 Console.WriteLine("Player '{0}' ready for round", MatchMaker.matches[matchID].p2.username);
             }
+        }
+
+        private static void HandleSendSelectedCard(int connectionID, byte[] data)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteBytes(data);
+            int packageID = buffer.ReadInteger();
+            int matchID = buffer.ReadInteger();
+            int selectedCardID = buffer.ReadInteger();
+
+
+            if (MatchMaker.matches[matchID].p1.connectionID == connectionID)
+            {
+                MatchMaker.matches[matchID].p1.selectedCardID = selectedCardID;
+                Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p1.username, selectedCardID);
+            }
+            else
+            {
+                MatchMaker.matches[matchID].p1.selectedCardID = selectedCardID;
+                Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p2.username, selectedCardID);
+            }
+
         }
     }
 }

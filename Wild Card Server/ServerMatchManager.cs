@@ -72,7 +72,7 @@ namespace Wild_Card_Server
                     ServerTCP.PACKET_StartRound(p1.connectionID);
                     ServerTCP.PACKET_StartRound(p2.connectionID);
                     
-                    while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { Console.Write("Waiting"); Console.Clear(); }
+                    while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) {}
                     p1.Ready = false;
                     p2.Ready = false;
                     ServerTCP.PACKET_ShowResult(p1.connectionID);
