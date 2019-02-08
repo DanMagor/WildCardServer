@@ -110,10 +110,50 @@ namespace Wild_Card_Server
         //TODO Change Method with Connection Attribute for multople Reading
         public static ByteBuffer TakeAttackCardInfo(MySqlConnection connection, int cardID)
         {
-            ByteBuffer buffer = new ByteBuffer();
-            string query = "SELECT * from attack_cards WHERE id='" + cardID + "'";
+            //TEMPORARY:
+            string query = "SELECT type from cards WHERE id='" + cardID + "'";
             MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader reader;
+
+            try
+            {
+
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+            string type = "";
+            while (reader.Read())
+            {
+                type = (string)reader["type"];
+            }
+            reader.Close();
+
+            switch (type)
+            {
+                case "Attack":
+                    type = "attack_cards";
+                    break;
+                case "Heal":
+                    type = "heal_cards";
+                    break;
+                case "Item":
+                    type = "item_cards";
+                    break;
+                default:
+                    break;
+            }
+            ///////////
+
+            query = "SELECT * from " + type + " WHERE id='" + cardID + "'";
+            cmd = new MySqlCommand(query, connection);
+
+            ByteBuffer buffer = new ByteBuffer();
+            
 
 
             try

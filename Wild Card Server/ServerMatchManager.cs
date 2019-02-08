@@ -75,13 +75,10 @@ namespace Wild_Card_Server
                     ServerTCP.PACKET_StartRound(p2.connectionID);
                     
                     while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) {}
-                    p1.Ready = false;
-                    p2.Ready = false;
+                   
 
                     CalculateResults();
-                    //deselect cards:
-                    p1.selectedCardID = -1;
-                    p2.selectedCardID = -1;
+                   
 
 
                     //Send Info to each player in format: playerHealth, EnemyHealth, PlayerBullets, EnemyBullets, PlayerCard, EnemyCard //Later add: PlayerAction, EnemyAction for animation
@@ -103,11 +100,19 @@ namespace Wild_Card_Server
                     buffer2.WriteInteger(p2.selectedCardID);
                     buffer2.WriteInteger(p1.selectedCardID);
 
+                    //Set Ready to false, for animations
+                    p1.Ready = false;
+                    p2.Ready = false;
+                    //deselect cards:
+                    p1.selectedCardID = -1;
+                    p2.selectedCardID = -1;
+
                     //Sending:
                     ServerTCP.PACKET_ShowResult(p1.connectionID, buffer.ToArray());
                     ServerTCP.PACKET_ShowResult(p2.connectionID, buffer2.ToArray());
+
                     
-                    
+
                 }
 
             }
