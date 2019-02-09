@@ -107,10 +107,9 @@ namespace Wild_Card_Server
         }
 
 
-        //TODO Change Method with Connection Attribute for multople Reading
-        public static ByteBuffer TakeAttackCardInfo(MySqlConnection connection, int cardID)
+
+        public static string GetCardType(MySqlConnection connection, int cardID)
         {
-            //TEMPORARY:
             string query = "SELECT type from cards WHERE id='" + cardID + "'";
             MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader reader;
@@ -133,28 +132,17 @@ namespace Wild_Card_Server
             }
             reader.Close();
 
-            switch (type)
-            {
-                case "Attack":
-                    type = "attack_cards";
-                    break;
-                case "Heal":
-                    type = "heal_cards";
-                    break;
-                case "Item":
-                    type = "item_cards";
-                    break;
-                default:
-                    break;
-            }
-            ///////////
+            return type;
+        }
 
-            query = "SELECT * from " + type + " WHERE id='" + cardID + "'";
-            cmd = new MySqlCommand(query, connection);
-
+        //TODO Change Method with Connection Attribute for multople Reading
+        public static ByteBuffer GetAttackCardInfo(MySqlConnection connection, int cardID)
+        {
+            //TEMPORARY:
+            string query = "SELECT * from attack_cards WHERE id='" + cardID + "'";
+            MySqlCommand cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
             ByteBuffer buffer = new ByteBuffer();
-            
-
 
             try
             {
@@ -170,7 +158,6 @@ namespace Wild_Card_Server
 
             int damage = 0;
             int bullets = 0;
-            //while (!reader.IsClosed) { }
 
             while (reader.Read())
             {
@@ -187,7 +174,13 @@ namespace Wild_Card_Server
             buffer.WriteInteger(damage);
             buffer.WriteInteger(bullets);
 
+            //TEMPORARY TESTING!!:
+            buffer.WriteString("AddBullet");
+            buffer.WriteInteger(1);
+
             return buffer;
+
+
         }
 
         public static ArrayList TakeRandomAttackCards(MySqlConnection connection, int numberOfCards)

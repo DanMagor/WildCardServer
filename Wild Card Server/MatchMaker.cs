@@ -18,6 +18,8 @@ namespace Wild_Card_Server
 
         public static ServerMatchManager[] matches = new ServerMatchManager[Constants.MAX_MATCHES]; //TODO Rework to LIST or fix NULL Problem
 
+
+
         public static void AddPlayerToSearch(int connectionID, string username)
         {
             

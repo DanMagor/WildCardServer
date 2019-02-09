@@ -17,7 +17,7 @@ namespace Wild_Card_Server
 
         public bool isActive = false;
 
-        public MySqlConnection mySQLConnection;
+        public MySqlConnection matchSQLConnection;
 
 
         public ServerMatchManager(int _matchID, TempPlayer _player1, TempPlayer _player2)
@@ -25,11 +25,11 @@ namespace Wild_Card_Server
             p1 = _player1;
             p2 = _player2;
             matchID = _matchID;
-            mySQLConnection = new MySqlConnection(MySQL.CreateConnectionString());
+            matchSQLConnection = new MySqlConnection(MySQL.CreateConnectionString());
             try
             {
-                mySQLConnection.Open();
-                Console.WriteLine("Match №{0} Succesfully connected to MySQL Server '{1}'", matchID, mySQLConnection.ToString());
+                matchSQLConnection.Open();
+                Console.WriteLine("Match №{0} Succesfully connected to MySQL Server '{1}'", matchID, matchSQLConnection.ToString());
             }
             catch (Exception ex)
             {
@@ -66,19 +66,19 @@ namespace Wild_Card_Server
                 //Wait while client Catch Cards
                 if ((p1.Ready && p2.Ready))
                 {
-                    
+
                     SendCards();
                     p1.Ready = false;
                     p2.Ready = false;
                     roundStartTIme = DateTime.Now;
                     ServerTCP.PACKET_StartRound(p1.connectionID);
                     ServerTCP.PACKET_StartRound(p2.connectionID);
-                    
-                    while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) {}
-                   
+
+                    while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { }
+
 
                     CalculateResults();
-                   
+
 
 
                     //Send Info to each player in format: playerHealth, EnemyHealth, PlayerBullets, EnemyBullets, PlayerCard, EnemyCard //Later add: PlayerAction, EnemyAction for animation
@@ -104,14 +104,13 @@ namespace Wild_Card_Server
                     p1.Ready = false;
                     p2.Ready = false;
                     //deselect cards:
-                    p1.selectedCardID = -1;
-                    p2.selectedCardID = -1;
+                   
 
                     //Sending:
                     ServerTCP.PACKET_ShowResult(p1.connectionID, buffer.ToArray());
                     ServerTCP.PACKET_ShowResult(p2.connectionID, buffer2.ToArray());
 
-                    
+
 
                 }
 
@@ -120,29 +119,85 @@ namespace Wild_Card_Server
 
         private void CalculateResults()
         {
-            //From P1 to P2
-            if (p1.selectedCardID != -1)
-            {
-                ByteBuffer buffer = Database.TakeAttackCardInfo(mySQLConnection, p1.selectedCardID);
-                int damage = buffer.ReadInteger();
-                int bullets = buffer.ReadInteger();
-                p2.TakeShoot(bullets, damage);
-            }
 
-            if (p2.selectedCardID != -1)
+
+            TempPlayer[] players = { p1, p2 };
+            foreach (var player in players)
             {
-                //From P2 to P1:
-                ByteBuffer buffer = Database.TakeAttackCardInfo(mySQLConnection, p2.selectedCardID);
-                int damage = buffer.ReadInteger();
-                int bullets = buffer.ReadInteger();
-                p1.TakeShoot(bullets, damage);
+                if (player.selectedCardID != -1)
+                {
+                    string type = Database.GetCardType(matchSQLConnection, player.selectedCardID);
+                    switch (type)
+                    {
+                        case "Attack":
+                            Console.Write("ATTTACK!!");
+                            CalculateAttackCard(player);
+                            break;
+                        case "Heal":
+                            CalculateHealCard(player);
+                            break;
+                        case "Item":
+                            CalculateItemCard(player);
+                            break;
+                    }
+                }
+                else
+                {
+                    CalculateNoCard(player);
+                }
             }
+            foreach (var player in players)
+            {
+                player.UpdateStats();
+                player.SetDefaultValuesForResult();
+            }
+            
+        }
+
+        private void CalculateNoCard(TempPlayer player)
+        {
+            player.UseEffects();
+            
+        }
+        private void CalculateAttackCard(TempPlayer player)
+        {
+            //DETECT Other player for shooting
+            TempPlayer other = player == p1 ? p2 : p1;
+
+            // READ INFO ABOUT CARD
+            var buffer = Database.GetAttackCardInfo(matchSQLConnection, player.selectedCardID);
+            int dmgPBullet = buffer.ReadInteger();
+            int bullets = buffer.ReadInteger();
+            string effect = buffer.ReadString();
+            int duration = buffer.ReadInteger();
+
+            //add Effect as Active to Player
+            player.AddEffect(effect, duration);
+
+            //Save temp results for match
+            player.results.dmgPerBullet = dmgPBullet;
+            player.results.bulletsSpent = bullets;
+
+            //Use Active Effect for results calculating
+            player.UseEffects();
+
+            player.MakeShots(other);
+        }
+
+        private void CalculateHealCard(TempPlayer player)
+        {
+
+        }
+
+        private void CalculateItemCard(TempPlayer player)
+        {
+
         }
 
         //TODO Rework Logic for random cards from DB
         private void SendCards()
         {
-            ArrayList cards = Database.TakeRandomCardsOfEachType(mySQLConnection); //TODO Replace "3" with Const?
+            ArrayList cards = Database.TakeRandomCardsOfEachType(matchSQLConnection); //TODO Replace "3" with Const?
 
 
             ServerTCP.PACKET_SendCards(p1.connectionID, cards);

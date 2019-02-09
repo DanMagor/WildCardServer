@@ -104,6 +104,9 @@ namespace Wild_Card_Server
 
         private static void HandleLogin(int connectionId, byte[] data)
         {
+            //TODO: R
+
+
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteBytes(data);
             int packageID = buffer.ReadInteger();
@@ -123,9 +126,12 @@ namespace Wild_Card_Server
             }
             ArrayList allCards = Database.TakeAllCardsWithInformation(mySQLConnection); //TODO: REWORK WHEN CHANGE HEAL ITEM LOGIC
 
+
+
             mySQLConnection.Close();
 
             ServerTCP.PACKET_SendAllCards(connectionId, allCards);
+
 
 
 
