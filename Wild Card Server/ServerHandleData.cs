@@ -104,7 +104,7 @@ namespace Wild_Card_Server
 
         private static void HandleLogin(int connectionId, byte[] data)
         {
-            //TODO: R
+            
 
 
             ByteBuffer buffer = new ByteBuffer();
@@ -124,13 +124,14 @@ namespace Wild_Card_Server
                 Console.WriteLine(ex.ToString());
                 throw;
             }
-            ArrayList allCards = Database.TakeAllCardsWithInformation(mySQLConnection); //TODO: REWORK WHEN CHANGE HEAL ITEM LOGIC
+
+            //ArrayList allCards = Database.TakeAllCardsWithInformation(mySQLConnection); //TODO: REWORK WHEN CHANGE HEAL ITEM LOGIC
 
 
 
             mySQLConnection.Close();
 
-            ServerTCP.PACKET_SendAllCards(connectionId, allCards);
+            ServerTCP.PACKET_SendAllCards(connectionId);
 
 
 
@@ -217,11 +218,19 @@ namespace Wild_Card_Server
             if (MatchMaker.matches[matchID].p1.connectionID == connectionID)
             {
                 MatchMaker.matches[matchID].p1.selectedCardID = selectedCardID;
+                if (MatchMaker.matches[matchID].p2.initiative == false)
+                {
+                    MatchMaker.matches[matchID].p1.initiative = true;
+                }
                 Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p1.username, selectedCardID);
             }
             else
             {
                 MatchMaker.matches[matchID].p2.selectedCardID = selectedCardID;
+                if (MatchMaker.matches[matchID].p1.initiative == false)
+                {
+                    MatchMaker.matches[matchID].p2.initiative = true;
+                }
                 Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p2.username, selectedCardID);
             }
 

@@ -11,13 +11,16 @@ namespace Wild_Card_Server
     {
 
         public int connectionID;
+        public int matchID;
         public string username;
         public RoundResults results = new RoundResults();
 
         private int health;
-        private int n_bullets;
-        private Dictionary<string, int> effects; //Name of effect and remaining duration time 
+        public int n_bullets;
+        private Dictionary<string, Tuple<int,int>> effects; //Key - name of effect(delegate), Tuple: Effect value and remaining duration time 
 
+
+        public bool initiative = false;
 
         public struct RoundResults
         {
@@ -60,7 +63,7 @@ namespace Wild_Card_Server
             username = _username;
             health = HP;
             n_bullets = bullets;
-            effects = new Dictionary<string, int>();
+            effects = new Dictionary<string, Tuple<int,int>>();
             SetDefaultValuesForResult();
             
         }
@@ -93,6 +96,7 @@ namespace Wild_Card_Server
         {
             UpdateEffects();
             ReceiveDamage();
+            ReceiveHeal();
             selectedCardID = -1;
 
 
@@ -114,21 +118,31 @@ namespace Wild_Card_Server
             p2.results.selfdamage += damage;
         }
 
+        public void ReceivePureDamage(int damage)
+        {
+            results.selfdamage += damage;
+        }
+
         private void ReceiveDamage()
         {
             health -= results.selfdamage;
         }
-
-        public void AddEffect(string name, int duration)
+        private void ReceiveHeal()
         {
-            effects[name] = duration;
+            health += results.healing;
+        }
+
+        public void AddEffect(string name, int value, int duration)
+        {
+            effects[name] = Tuple.Create(value,duration);
         }
         public void UpdateEffects()
         {
             foreach (var eff in effects.ToList())
             {
-                effects[eff.Key] = eff.Value - 1;
-                if (effects[eff.Key] <= 0)
+                //effects[eff.Key] = eff.Value - 1;
+                effects[eff.Key] = Tuple.Create(eff.Value.Item1, eff.Value.Item2 - 1);
+                if (effects[eff.Key].Item2 <= 0)
                 {
                     effects.Remove(eff.Key);
                 }
@@ -140,7 +154,7 @@ namespace Wild_Card_Server
             {
                 if (MatchConstants.effects.TryGetValue(keyEff, out MatchConstants.UseEffect effect))
                 {
-                    effect.Invoke(this);
+                    effect.Invoke(this,effects[keyEff].Item1);
                 }
             }
 
@@ -155,6 +169,7 @@ namespace Wild_Card_Server
             results.evasion = 0;
             results.healing = 0;
             results.selfdamage = 0;
+            initiative = false;
         }
 
 

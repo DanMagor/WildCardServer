@@ -135,8 +135,8 @@ namespace Wild_Card_Server
             return type;
         }
 
-        //TODO Change Method with Connection Attribute for multople Reading
-        public static ByteBuffer GetAttackCardInfo(MySqlConnection connection, int cardID)
+
+        public static ByteBuffer GetAttackCard(MySqlConnection connection, int cardID)
         {
             //TEMPORARY:
             string query = "SELECT * from attack_cards WHERE id='" + cardID + "'";
@@ -156,27 +156,61 @@ namespace Wild_Card_Server
                 throw;
             }
 
-            int damage = 0;
-            int bullets = 0;
+            //General Parameters
+            int damage = 0, bullets = 0, accuracy = 0;
+            string name = "", image = "";
+
+            //Initiative Effect information
+            string initiativeName = "", initiativeEffect = "";
+            int initiativeValue = 0, initiativeDuration = 0;
+
+            //Additional Effects Information
+            string additionalEffectName = "", additionalEffect = "";
+            int addtionalEffectValue = 0, additionalEffectDuration = 0;
+
+
 
             while (reader.Read())
             {
                 damage = (int)reader["damage"];
                 bullets = (int)reader["bullets"];
+                accuracy = (int)reader["accuracy"];
+                name = (string)reader["name"];
+                image = (string)reader["image"];
+
+
+                initiativeName = (string)reader["initiativeName"];
+                initiativeEffect = (string)reader["initiativeEffect"];
+                initiativeValue = (int)reader["initiativeValue"];
+                initiativeDuration = (int)reader["initiativeDuration"];
+
+
+                additionalEffectName = (string)reader["additionalEffectName"];
+                additionalEffect = (string)reader["additionalEffect"];
+                addtionalEffectValue = (int)reader["additionalEffectValue"];
+                additionalEffectDuration = (int)reader["additionalEffectDuration"];
             }
 
             reader.Close();
 
             Console.WriteLine("Card with ID '{0}' has {1} damage and {2} bullets", cardID, damage, bullets);
 
-            //buffer.WriteInteger(cardID);
-            //buffer.WriteInteger((int)CardTypes.Attack);
+
             buffer.WriteInteger(damage);
             buffer.WriteInteger(bullets);
+            buffer.WriteInteger(accuracy);
+            buffer.WriteString(name);
+            buffer.WriteString(image);
 
-            //TEMPORARY TESTING!!:
-            buffer.WriteString("AddBullet");
-            buffer.WriteInteger(1);
+            buffer.WriteString(initiativeName);
+            buffer.WriteString(initiativeEffect);
+            buffer.WriteInteger(initiativeValue);
+            buffer.WriteInteger(initiativeDuration);
+
+            buffer.WriteString(additionalEffectName);
+            buffer.WriteString(additionalEffect);
+            buffer.WriteInteger(addtionalEffectValue);
+            buffer.WriteInteger(additionalEffectDuration);
 
             return buffer;
 
@@ -253,7 +287,7 @@ namespace Wild_Card_Server
             {
                 uint cardID = (uint)reader["id"];
                 resultCards.Add((int)cardID);
-               // Console.WriteLine("Card with ID '{0}' was received", cardID);
+                // Console.WriteLine("Card with ID '{0}' was received", cardID);
             }
 
             reader.Close();
@@ -265,12 +299,12 @@ namespace Wild_Card_Server
         public static ArrayList TakeAllCardsWithInformation(MySqlConnection connection)
         {
 
-            
+
             //Console.WriteLine("OPEN READER");
             ArrayList resultCards = new ArrayList();
-            string query = "(SELECT * from attack_cards)" +  "UNION" + 
-                "(SELECT * from heal_cards)" + "UNION" +
-                "(SELECT * from item_cards)";
+            string query = "(SELECT * from attack_cards)"; //+ "UNION" +
+            //    "(SELECT * from heal_cards)" + "UNION" +
+            //    "(SELECT * from item_cards)";
             MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader reader;
 
@@ -306,6 +340,213 @@ namespace Wild_Card_Server
             return resultCards;
         }
 
+        public static Dictionary<int, Card> GetAllCards()
+        {
+            var result = new Dictionary<int, Card>();
+
+            var query = "SELECT * from cards";
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+
+            connection.Open();
+
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+
+            try
+            {
+                reader = cmd.ExecuteReader();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+
+            //TO DO: To be sure that it's everything that we need in 'Card' class
+            while (reader.Read())
+            {
+                Card tempCard = new Card();
+
+                tempCard.id = (int)(uint)reader["id"];
+                tempCard.type = (string)reader["type"];
+                result[tempCard.id] =  tempCard;
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+
+        }
+        public static Dictionary<int,AttackCard> GetAllAttackCards()
+        {
+
+            var result = new Dictionary<int, AttackCard>();
+
+
+            var query = "SELECT * from attack_cards";
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+            connection.Open();
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+            try
+            {
+
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+
+
+
+            
+            while (reader.Read())
+            {
+                AttackCard tempCard = new AttackCard();
+
+                tempCard.id = (int)(uint)reader["id"];
+                tempCard.type = "Attack";
+                tempCard.damage = (int)reader["damage"];
+                tempCard.bullets = (int)reader["bullets"];
+                tempCard.accuracy = (int)reader["accuracy"];
+                tempCard.name = (string)reader["name"];
+                tempCard.image = (string)reader["image"];
+
+
+                tempCard.initiativeName = (string)reader["initiativeName"];
+                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                tempCard.initiativeValue = (int)reader["initiativeValue"];
+                tempCard.initiativeDuration = (int)reader["initiativeDuration"];
+
+
+                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
+                tempCard.additionalEffect = (string)reader["additionalEffect"];
+                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
+                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
+
+                result[tempCard.id] = tempCard;
+                
+
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+        }
+        public static Dictionary<int, HealCard> GetAllHealCard()
+        {
+            var result = new Dictionary<int, HealCard>();
+
+
+            var query = "SELECT * from heal_cards";
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+            connection.Open();
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+            try
+            {
+
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            while (reader.Read())
+            {
+                HealCard tempCard = new HealCard();
+
+                tempCard.id = (int)(uint)reader["id"];
+                tempCard.type = "Heal";
+                tempCard.heal = (int)reader["heal"];
+                tempCard.name = (string)reader["name"];
+                tempCard.image = (string)reader["image"];
+
+
+                tempCard.initiativeName = (string)reader["initiativeName"];
+                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                tempCard.initiativeValue = (int)reader["initiativeValue"];
+                tempCard.initiativeDuration = (int)reader["initiativeDuration"];
+
+
+                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
+                tempCard.additionalEffect = (string)reader["additionalEffect"];
+                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
+                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
+
+                result[tempCard.id] = tempCard;
+
+
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+        }
+        public static Dictionary<int, ItemCard> GetAllItemCard()
+        {
+            var result = new Dictionary<int, ItemCard>();
+
+
+            var query = "SELECT * from item_cards";
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+            connection.Open();
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+            try
+            {
+
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            while (reader.Read())
+            {
+                ItemCard tempCard = new ItemCard();
+
+                tempCard.id = (int)(uint)reader["id"];
+                tempCard.type = "Item";
+                tempCard.name = (string)reader["name"];
+                tempCard.image = (string)reader["image"];
+
+
+                tempCard.initiativeName = (string)reader["initiativeName"];
+                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                tempCard.initiativeValue = (int)reader["initiativeValue"];
+                tempCard.initiativeDuration = (int)reader["initiativeDuration"];
+
+
+                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
+                tempCard.additionalEffect = (string)reader["additionalEffect"];
+                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
+                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
+
+                result[tempCard.id] = tempCard;
+
+
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+        }
 
     }
 }

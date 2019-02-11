@@ -25,6 +25,9 @@ namespace Wild_Card_Server
             p1 = _player1;
             p2 = _player2;
             matchID = _matchID;
+
+            p1.matchID = matchID;
+            p2.matchID = matchID;
             matchSQLConnection = new MySqlConnection(MySQL.CreateConnectionString());
             try
             {
@@ -126,11 +129,10 @@ namespace Wild_Card_Server
             {
                 if (player.selectedCardID != -1)
                 {
-                    string type = Database.GetCardType(matchSQLConnection, player.selectedCardID);
+                    string type = Constants.cards[player.selectedCardID].type;
                     switch (type)
                     {
                         case "Attack":
-                            Console.Write("ATTTACK!!");
                             CalculateAttackCard(player);
                             break;
                         case "Heal":
@@ -161,43 +163,99 @@ namespace Wild_Card_Server
         }
         private void CalculateAttackCard(TempPlayer player)
         {
-            //DETECT Other player for shooting
-            TempPlayer other = player == p1 ? p2 : p1;
+           
 
-            // READ INFO ABOUT CARD
-            var buffer = Database.GetAttackCardInfo(matchSQLConnection, player.selectedCardID);
-            int dmgPBullet = buffer.ReadInteger();
-            int bullets = buffer.ReadInteger();
-            string effect = buffer.ReadString();
-            int duration = buffer.ReadInteger();
+            AttackCard card = Constants.attackCards[player.selectedCardID];
 
-            //add Effect as Active to Player
-            player.AddEffect(effect, duration);
+            //Add initiative if player was first
+            if (player.initiative &&  card.initiativeEffect != "")
+            {
+                player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+            }
+
+            //add additional effect if card has it
+            if (card.additionalEffect != "")
+            {
+                player.AddEffect(card.additionalEffect, card.additionalEffectValue, card.additionalEffectDuration);
+            }
+            
 
             //Save temp results for match
-            player.results.dmgPerBullet = dmgPBullet;
-            player.results.bulletsSpent = bullets;
+            player.results.dmgPerBullet = card.damage;
+            player.results.bulletsSpent = card.bullets;
+            player.results.accuracy += card.accuracy; //+ because default value for accuracy is 100
 
             //Use Active Effect for results calculating
             player.UseEffects();
 
+
+            //DETECT Other player for shooting
+            TempPlayer other = player == p1 ? p2 : p1;
             player.MakeShots(other);
         }
 
         private void CalculateHealCard(TempPlayer player)
         {
+            HealCard card = Constants.healCards[player.selectedCardID];
+
+            //Add initiative if player was first
+            if (player.initiative && card.initiativeEffect != "")
+            {
+                player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+            }
+
+            //add additional effect if card has it
+            if (card.additionalEffect != "")
+            {
+                player.AddEffect(card.additionalEffect, card.additionalEffectValue, card.additionalEffectDuration);
+            }
+
+            player.results.healing += card.heal;
+
+            //Use Active Effect for results calculating
+            player.UseEffects();
 
         }
 
         private void CalculateItemCard(TempPlayer player)
         {
+            ItemCard card = Constants.itemCards[player.selectedCardID];
+
+            //Add initiative if player was first
+            if (player.initiative && card.initiativeEffect != "")
+            {
+                player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+            }
+
+            //add additional effect if card has it
+            if (card.additionalEffect != "")
+            {
+                player.AddEffect(card.additionalEffect, card.additionalEffectValue, card.additionalEffectDuration);
+            }
+            
+
+            //Use Active Effect for results calculating
+            player.UseEffects();
 
         }
 
-        //TODO Rework Logic for random cards from DB
+        //TODO Rework Logic for random cards for EACH Player from DB
         private void SendCards()
         {
-            ArrayList cards = Database.TakeRandomCardsOfEachType(matchSQLConnection); //TODO Replace "3" with Const?
+
+            //TODO CHANGE, NOW WORKS ONLY FOR ATTACK CARDS
+            ArrayList cards = new ArrayList();
+
+            Random rand = new Random();
+
+            //Add Attack Card
+            cards.Add(Constants.attackCards.ElementAt(rand.Next(0, Constants.attackCards.Count)).Key);
+
+            //Add Heal Card
+            cards.Add(Constants.healCards.ElementAt(rand.Next(0, Constants.healCards.Count)).Key);
+
+            //Add Item Card
+            cards.Add(Constants.itemCards.ElementAt(rand.Next(0, Constants.itemCards.Count)).Key);
 
 
             ServerTCP.PACKET_SendCards(p1.connectionID, cards);

@@ -119,23 +119,94 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        public static void PACKET_SendAllCards(int connectionID, ArrayList allCards)
+        public static void PACKET_SendAllCards(int connectionID)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SSendAllCards);
-            buffer.WriteInteger(allCards.Count / 4); //TODO: Change. TEMP Cause There is 4 Fields
 
-            foreach (var card_info in allCards)
+            //Write Attack Cards in Buffer
+            buffer.WriteInteger(Constants.attackCards.Count); // Save number of Attack Cards for reading on Client
+            foreach (var card in Constants.attackCards.Values)
             {
-                if (card_info is int)
-                {
-                    buffer.WriteInteger((int)card_info);
-                }
-                else
-                {
-                    buffer.WriteString((string)card_info);
-                }
+                //General Info
+                buffer.WriteInteger(card.id);
+                buffer.WriteString(card.type);
+                buffer.WriteString(card.name);
+                buffer.WriteString(card.image);
+
+                //Attack Card Info
+                buffer.WriteInteger(card.damage);
+                buffer.WriteInteger(card.bullets);
+                buffer.WriteInteger(card.accuracy);
+
+                //Initiative Effect
+                buffer.WriteString(card.initiativeName);
+                buffer.WriteString(card.initiativeEffect);
+                buffer.WriteInteger(card.initiativeValue);
+                buffer.WriteInteger(card.initiativeDuration);
+
+                //Additional Effect
+                buffer.WriteString(card.additionalEffectName);
+                buffer.WriteString(card.additionalEffect);
+                buffer.WriteInteger(card.additionalEffectValue);
+                buffer.WriteInteger(card.additionalEffectDuration);
             }
+
+            //Write Heal Cards in Buffer
+            buffer.WriteInteger(Constants.healCards.Count); // Save number of Heal Cards for reading on Client
+            foreach (var card in Constants.healCards.Values)
+            {
+                //General Info
+                buffer.WriteInteger(card.id);
+                buffer.WriteString(card.type);
+
+                buffer.WriteString(card.name);
+                buffer.WriteString(card.image);
+
+                //Heal Card Info
+                buffer.WriteInteger(card.heal);
+                
+                //Initiative Effect
+                buffer.WriteString(card.initiativeName);
+                buffer.WriteString(card.initiativeEffect);
+                buffer.WriteInteger(card.initiativeValue);
+                buffer.WriteInteger(card.initiativeDuration);
+
+                //Additional Effect
+                buffer.WriteString(card.additionalEffectName);
+                buffer.WriteString(card.additionalEffect);
+                buffer.WriteInteger(card.additionalEffectValue);
+                buffer.WriteInteger(card.additionalEffectDuration);
+            }
+
+            //Write Item Cards in buffer
+            buffer.WriteInteger(Constants.itemCards.Count); // Save number of Item Cards for reading on Client
+            foreach (var card in Constants.itemCards.Values)
+            {
+                //General Info
+                buffer.WriteInteger(card.id);
+                buffer.WriteString(card.type);
+                buffer.WriteString(card.name);
+                buffer.WriteString(card.image);
+
+                //Item Card Info 
+                //There is no anything actually
+
+                //Initiative Effect
+                buffer.WriteString(card.initiativeName);
+                buffer.WriteString(card.initiativeEffect);
+                buffer.WriteInteger(card.initiativeValue);
+                buffer.WriteInteger(card.initiativeDuration);
+
+                //Additional Effect
+                buffer.WriteString(card.additionalEffectName);
+                buffer.WriteString(card.additionalEffect);
+                buffer.WriteInteger(card.additionalEffectValue);
+                buffer.WriteInteger(card.additionalEffectDuration);
+            }
+
+
+
             SendDataTo(connectionID, buffer.ToArray());
 
         }
