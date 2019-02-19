@@ -22,3 +22,9 @@ public enum ClientPackages
     CSendSelectedCard,
 }
 
+public enum EffectsTypes
+{
+    AccuracyPenalty = 1,
+
+}
+

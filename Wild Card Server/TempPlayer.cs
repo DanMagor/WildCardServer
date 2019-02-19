@@ -16,6 +16,7 @@ namespace Wild_Card_Server
         public RoundResults results = new RoundResults();
 
         private int health;
+        public int max_bullets = 6;
         public int n_bullets;
         private Dictionary<string, Tuple<int,int>> effects; //Key - name of effect(delegate), Tuple: Effect value and remaining duration time 
 
@@ -39,6 +40,7 @@ namespace Wild_Card_Server
         //private int[] Deck;
 
         public int selectedCardID = -1;
+        public string bodyPart = "";
         private bool ready = false;
 
         public bool Ready

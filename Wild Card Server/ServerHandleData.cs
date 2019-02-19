@@ -213,11 +213,13 @@ namespace Wild_Card_Server
             int packageID = buffer.ReadInteger();
             int matchID = buffer.ReadInteger();
             int selectedCardID = buffer.ReadInteger();
+            string bodyPart = buffer.ReadString();
 
 
             if (MatchMaker.matches[matchID].p1.connectionID == connectionID)
             {
                 MatchMaker.matches[matchID].p1.selectedCardID = selectedCardID;
+                MatchMaker.matches[matchID].p1.bodyPart = bodyPart;
                 if (MatchMaker.matches[matchID].p2.initiative == false)
                 {
                     MatchMaker.matches[matchID].p1.initiative = true;
@@ -227,6 +229,7 @@ namespace Wild_Card_Server
             else
             {
                 MatchMaker.matches[matchID].p2.selectedCardID = selectedCardID;
+                MatchMaker.matches[matchID].p2.bodyPart = bodyPart;
                 if (MatchMaker.matches[matchID].p1.initiative == false)
                 {
                     MatchMaker.matches[matchID].p2.initiative = true;

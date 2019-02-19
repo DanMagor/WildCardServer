@@ -79,7 +79,8 @@ namespace Wild_Card_Server
 
                     while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { }
 
-
+                    int p1SelectedCardID = p1.selectedCardID;
+                    int p2SelectedCardID = p2.selectedCardID;
                     CalculateResults();
 
 
@@ -91,8 +92,8 @@ namespace Wild_Card_Server
                     buffer.WriteInteger(p2.Health);
                     buffer.WriteInteger(p1.Bullets);
                     buffer.WriteInteger(p2.Bullets);
-                    buffer.WriteInteger(p1.selectedCardID);
-                    buffer.WriteInteger(p2.selectedCardID);
+                    buffer.WriteInteger(p1SelectedCardID);
+                    buffer.WriteInteger(p2SelectedCardID);
 
                     //for player2:
                     ByteBuffer buffer2 = new ByteBuffer();
@@ -100,8 +101,8 @@ namespace Wild_Card_Server
                     buffer2.WriteInteger(p1.Health);
                     buffer2.WriteInteger(p2.Bullets);
                     buffer2.WriteInteger(p1.Bullets);
-                    buffer2.WriteInteger(p2.selectedCardID);
-                    buffer2.WriteInteger(p1.selectedCardID);
+                    buffer2.WriteInteger(p2SelectedCardID);
+                    buffer2.WriteInteger(p1SelectedCardID);
 
                     //Set Ready to false, for animations
                     p1.Ready = false;
@@ -141,6 +142,9 @@ namespace Wild_Card_Server
                         case "Item":
                             CalculateItemCard(player);
                             break;
+                        case "Special":
+                            CalculateSpecialCard(player);
+                            break;
                     }
                 }
                 else
@@ -178,7 +182,23 @@ namespace Wild_Card_Server
             {
                 player.AddEffect(card.additionalEffect, card.additionalEffectValue, card.additionalEffectDuration);
             }
-            
+
+            switch (player.bodyPart)
+            {
+                case "Head":
+                    player.AddEffect("ShootInHead", 0, 1);
+                    break;
+                case "Arm":
+                    player.AddEffect("ShootInArm", 0, 1);
+                    break;
+                case "Leg":
+                    player.AddEffect("ShootInLeg", 0, 1);
+                    break;
+                case "Body":
+                    player.AddEffect("ShootInBody", 0, 1);
+                    break;
+            }
+
 
             //Save temp results for match
             player.results.dmgPerBullet = card.damage;
@@ -239,6 +259,11 @@ namespace Wild_Card_Server
 
         }
 
+        //Temporary just make reload when choose reload card;
+        private void CalculateSpecialCard(TempPlayer player)
+        {
+            player.n_bullets = player.max_bullets;
+        }
         //TODO Rework Logic for random cards for EACH Player from DB
         private void SendCards()
         {
