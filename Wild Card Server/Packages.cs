@@ -4,10 +4,11 @@
     SAlertMsg,
     SLoadMenu,
     SLoadMatch,
-    SSendAllCards,
+    SSendAllCardsAndEffects,
     SSendCards,
     SStartRound,
     SShowResult,
+    SFinishGame,
 
 }
 
@@ -20,11 +21,6 @@ public enum ClientPackages
     CReadyForMatch,
     CReadyForRound,
     CSendSelectedCard,
-}
-
-public enum EffectsTypes
-{
-    AccuracyPenalty = 1,
-
+    CRestartMatch,
 }
 

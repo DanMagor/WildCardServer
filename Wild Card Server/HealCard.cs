@@ -15,14 +15,9 @@ namespace Wild_Card_Server
 
         public int heal;
         
-        public string initiativeName;
-        public string initiativeEffect;
+        
+        public int initiativeEffect;
         public int initiativeValue;
         public int initiativeDuration;
-
-        public string additionalEffectName;
-        public string additionalEffect;
-        public int additionalEffectValue;
-        public int additionalEffectDuration;
     }
 }

@@ -13,14 +13,13 @@ namespace Wild_Card_Server
         public string name;
         public string image;
 
-        public string initiativeName;
-        public string initiativeEffect;
+        public int itemDuration;
+        public string itemEffectLabel;
+        public string itemEffectImage;
+
+        public int initiativeEffect;
         public int initiativeValue;
         public int initiativeDuration;
 
-        public string additionalEffectName;
-        public string additionalEffect;
-        public int additionalEffectValue;
-        public int additionalEffectDuration;
     }
 }

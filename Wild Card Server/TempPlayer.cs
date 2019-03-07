@@ -15,10 +15,12 @@ namespace Wild_Card_Server
         public string username;
         public RoundResults results = new RoundResults();
 
-        private int health;
+        public int health;
+        public int maxHealth = 100;
         public int max_bullets = 6;
         public int n_bullets;
-        private Dictionary<string, Tuple<int,int>> effects; //Key - name of effect(delegate), Tuple: Effect value and remaining duration time 
+        public Dictionary<int, Tuple<int, int>> effects; //Key - ID of Effect, Tuple: Effect value and remaining duration time 
+
 
 
         public bool initiative = false;
@@ -65,34 +67,29 @@ namespace Wild_Card_Server
             username = _username;
             health = HP;
             n_bullets = bullets;
-            effects = new Dictionary<string, Tuple<int,int>>();
+            effects = new Dictionary<int, Tuple<int, int>>();
             SetDefaultValuesForResult();
-            
+
         }
 
-        //public void TakeShoot(int dmgPerBullet)
-        //{
-            
-                
-        //    ReceiveDamage(amountOfDamage);
-        //}
+
 
         public void MakeShots(TempPlayer p2)
         {
             results.bulletsSpent = Math.Min(n_bullets, results.bulletsSpent);
 
-            for (int i = 0; i < results.bulletsSpent; i++)
-            {
+            
                 //Check Do we hit or not
                 if (CheckHit(p2))
                 {
-                    p2.results.selfdamage += results.dmgPerBullet;
+                    p2.results.selfdamage += results.dmgPerBullet * results.bulletsSpent;
                 }
 
                 //In any case we spent bullet
-                n_bullets -= 1;
-            }
+                n_bullets -= results.bulletsSpent;
             
+            n_bullets = Math.Min(n_bullets, max_bullets);
+
         }
         public void UpdateStats()
         {
@@ -106,7 +103,7 @@ namespace Wild_Card_Server
         public bool CheckHit(TempPlayer p2)
         {
             Random r = new Random();
-            bool hit =  r.Next(0, 100) < results.accuracy;
+            bool hit = r.Next(0, 100) < results.accuracy;
             if (hit)
             {
                 return p2.results.evasion < r.Next(0, 100);
@@ -127,22 +124,21 @@ namespace Wild_Card_Server
 
         private void ReceiveDamage()
         {
-            health -= results.selfdamage;
+            health = Math.Max(health - results.selfdamage, 0);
         }
         private void ReceiveHeal()
         {
-            health += results.healing;
+            health = Math.Min(health + results.healing, maxHealth);
         }
 
-        public void AddEffect(string name, int value, int duration)
+        public void AddEffect(int effectID, int value, int duration)
         {
-            effects[name] = Tuple.Create(value,duration);
+            effects[effectID] = Tuple.Create(value, duration);
         }
         public void UpdateEffects()
         {
             foreach (var eff in effects.ToList())
             {
-                //effects[eff.Key] = eff.Value - 1;
                 effects[eff.Key] = Tuple.Create(eff.Value.Item1, eff.Value.Item2 - 1);
                 if (effects[eff.Key].Item2 <= 0)
                 {
@@ -150,17 +146,22 @@ namespace Wild_Card_Server
                 }
             }
         }
-        public void UseEffects()
+        public void UseEffects(bool isPredEffect)
         {
-            foreach (var keyEff in effects.Keys)
+
+            foreach (var keyEff in effects.Keys.ToList())
             {
-                if (MatchConstants.effects.TryGetValue(keyEff, out MatchConstants.UseEffect effect))
+                if (!(Constants.effects[keyEff].predEffect == 1 ^ isPredEffect)) //Used for separation Pred and Post effects in one Dictionary
                 {
-                    effect.Invoke(this,effects[keyEff].Item1);
+                    string delegateName = Constants.effects[keyEff].delegateName;
+                    if (MatchConstants.effects.TryGetValue(delegateName, out MatchConstants.UseEffect effect))
+                    {
+                        effect.Invoke(this, effects[keyEff].Item1);
+                    }
                 }
             }
 
-            
+
         }
 
         public void SetDefaultValuesForResult()

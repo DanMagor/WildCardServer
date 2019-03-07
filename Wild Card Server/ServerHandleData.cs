@@ -19,6 +19,7 @@ namespace Wild_Card_Server
             packetListener.Add((int)ClientPackages.CReadyForMatch, HandleReadyForMatch);
             packetListener.Add((int)ClientPackages.CReadyForRound, HandleReadyForRound);
             packetListener.Add((int)ClientPackages.CSendSelectedCard, HandleSendSelectedCard);
+            packetListener.Add((int)ClientPackages.CRestartMatch, HandleRestartMatch);
 
         }
 
@@ -236,6 +237,18 @@ namespace Wild_Card_Server
                 }
                 Console.WriteLine("Player '{0}' selected card {1}", MatchMaker.matches[matchID].p2.username, selectedCardID);
             }
+
+        }
+
+        private static void HandleRestartMatch(int connectionID, byte[] data)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteBytes(data);
+            buffer.ReadInteger(); //read package ID
+            int matchID = buffer.ReadInteger();
+            MatchMaker.matches[matchID].RestartMatch();
+
+
 
         }
     }

@@ -419,17 +419,13 @@ namespace Wild_Card_Server
                 tempCard.image = (string)reader["image"];
 
 
-                tempCard.initiativeName = (string)reader["initiativeName"];
-                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                
+                tempCard.initiativeEffect = (int)reader["initiativeEffectID"];
                 tempCard.initiativeValue = (int)reader["initiativeValue"];
                 tempCard.initiativeDuration = (int)reader["initiativeDuration"];
 
 
-                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
-                tempCard.additionalEffect = (string)reader["additionalEffect"];
-                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
-                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
-
+                
                 result[tempCard.id] = tempCard;
                 
 
@@ -473,16 +469,11 @@ namespace Wild_Card_Server
                 tempCard.image = (string)reader["image"];
 
 
-                tempCard.initiativeName = (string)reader["initiativeName"];
-                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                
+                tempCard.initiativeEffect = (int)reader["initiativeEffectID"];
                 tempCard.initiativeValue = (int)reader["initiativeValue"];
                 tempCard.initiativeDuration = (int)reader["initiativeDuration"];
 
-
-                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
-                tempCard.additionalEffect = (string)reader["additionalEffect"];
-                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
-                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
 
                 result[tempCard.id] = tempCard;
 
@@ -525,19 +516,64 @@ namespace Wild_Card_Server
                 tempCard.name = (string)reader["name"];
                 tempCard.image = (string)reader["image"];
 
-
-                tempCard.initiativeName = (string)reader["initiativeName"];
-                tempCard.initiativeEffect = (string)reader["initiativeEffect"];
+                tempCard.itemEffectImage = (string)reader["image"]; // TODO TEMPORARY, CHANGE TO CONCRETE
+                tempCard.itemDuration = (int)reader["initiativeDuration"];
+                tempCard.itemEffectLabel =((int)reader["initiativeValue"]).ToString();
+                
+                tempCard.initiativeEffect = (int)reader["initiativeEffectID"];
                 tempCard.initiativeValue = (int)reader["initiativeValue"];
                 tempCard.initiativeDuration = (int)reader["initiativeDuration"];
 
 
-                tempCard.additionalEffectName = (string)reader["additionalEffectName"];
-                tempCard.additionalEffect = (string)reader["additionalEffect"];
-                tempCard.additionalEffectValue = (int)reader["additionalEffectValue"];
-                tempCard.additionalEffectDuration = (int)reader["additionalEffectDuration"];
+                
 
                 result[tempCard.id] = tempCard;
+
+
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+        }
+
+        public static Dictionary<int, Effect> GetAllEffects()
+        {
+            var result = new Dictionary<int, Effect>();
+
+
+            var query = "SELECT * from effects";
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+            connection.Open();
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+            try
+            {
+
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            while (reader.Read())
+            {
+                Effect effect = new Effect();
+
+                effect.ID = (int)reader["id"];
+                effect.name = (string)reader["name"];
+                effect.image = (string)reader["image"];
+                
+
+                effect.delegateName = (string)reader["delegateName"];
+                effect.predEffect = (int)reader["predEffect"];
+                effect.selfEffect = (int)reader["selfEffect"];
+
+                result[effect.ID] = effect;
 
 
             }

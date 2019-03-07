@@ -122,7 +122,7 @@ namespace Wild_Card_Server
         public static void PACKET_SendAllCards(int connectionID)
         {
             ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SSendAllCards);
+            buffer.WriteInteger((int)ServerPackages.SSendAllCardsAndEffects);
 
             //Write Attack Cards in Buffer
             buffer.WriteInteger(Constants.attackCards.Count); // Save number of Attack Cards for reading on Client
@@ -140,16 +140,12 @@ namespace Wild_Card_Server
                 buffer.WriteInteger(card.accuracy);
 
                 //Initiative Effect
-                buffer.WriteString(card.initiativeName);
-                buffer.WriteString(card.initiativeEffect);
+                
+                buffer.WriteInteger(card.initiativeEffect);
                 buffer.WriteInteger(card.initiativeValue);
                 buffer.WriteInteger(card.initiativeDuration);
 
-                //Additional Effect
-                buffer.WriteString(card.additionalEffectName);
-                buffer.WriteString(card.additionalEffect);
-                buffer.WriteInteger(card.additionalEffectValue);
-                buffer.WriteInteger(card.additionalEffectDuration);
+                
             }
 
             //Write Heal Cards in Buffer
@@ -167,16 +163,10 @@ namespace Wild_Card_Server
                 buffer.WriteInteger(card.heal);
                 
                 //Initiative Effect
-                buffer.WriteString(card.initiativeName);
-                buffer.WriteString(card.initiativeEffect);
+                buffer.WriteInteger(card.initiativeEffect);
                 buffer.WriteInteger(card.initiativeValue);
                 buffer.WriteInteger(card.initiativeDuration);
 
-                //Additional Effect
-                buffer.WriteString(card.additionalEffectName);
-                buffer.WriteString(card.additionalEffect);
-                buffer.WriteInteger(card.additionalEffectValue);
-                buffer.WriteInteger(card.additionalEffectDuration);
             }
 
             //Write Item Cards in buffer
@@ -184,28 +174,33 @@ namespace Wild_Card_Server
             foreach (var card in Constants.itemCards.Values)
             {
                 //General Info
-                buffer.WriteInteger(card.id);
+                 buffer.WriteInteger(card.id);
                 buffer.WriteString(card.type);
                 buffer.WriteString(card.name);
                 buffer.WriteString(card.image);
 
                 //Item Card Info 
-                //There is no anything actually
+                buffer.WriteInteger(card.itemDuration);
+                buffer.WriteString(card.itemEffectLabel);
+                buffer.WriteString(card.itemEffectImage);
 
                 //Initiative Effect
-                buffer.WriteString(card.initiativeName);
-                buffer.WriteString(card.initiativeEffect);
+                buffer.WriteInteger(card.initiativeEffect);
                 buffer.WriteInteger(card.initiativeValue);
                 buffer.WriteInteger(card.initiativeDuration);
 
-                //Additional Effect
-                buffer.WriteString(card.additionalEffectName);
-                buffer.WriteString(card.additionalEffect);
-                buffer.WriteInteger(card.additionalEffectValue);
-                buffer.WriteInteger(card.additionalEffectDuration);
             }
 
 
+            //Write All effects info
+            buffer.WriteInteger(Constants.effects.Count);
+            foreach (var effect in Constants.effects.Values)
+            {
+                buffer.WriteInteger(effect.ID);
+                buffer.WriteString(effect.name);
+                buffer.WriteString(effect.image);
+            }
+            
 
             SendDataTo(connectionID, buffer.ToArray());
 
@@ -243,6 +238,14 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
+        public static void PACKET_FinishGame(int connectionID, string winnerUsername)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SFinishGame);
+            buffer.WriteString(winnerUsername);
+
+            SendDataTo(connectionID, buffer.ToArray());
+        }
 
 
 

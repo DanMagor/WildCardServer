@@ -57,6 +57,7 @@
     <Compile Include="ClientObject.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Database.cs" />
+    <Compile Include="Effect.cs" />
     <Compile Include="HealCard.cs" />
     <Compile Include="ItemCard.cs" />
     <Compile Include="MatchMaker.cs" />
