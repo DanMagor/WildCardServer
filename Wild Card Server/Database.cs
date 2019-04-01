@@ -110,7 +110,7 @@ namespace Wild_Card_Server
 
         public static string GetCardType(MySqlConnection connection, int cardID)
         {
-            string query = "SELECT type from cards WHERE id='" + cardID + "'";
+            string query = "SELECT type from Cards WHERE id='" + cardID + "'";
             MySqlCommand cmd = new MySqlCommand(query, connection);
             MySqlDataReader reader;
 
@@ -260,7 +260,7 @@ namespace Wild_Card_Server
                 numberOfCards += 3 - numberOfCards % 3;
             }
 
-            int numberOfPacks = numberOfCards / 3; //Number of cards of each type
+            int numberOfPacks = numberOfCards / 3; //Number of Cards of each type
 
             //Console.WriteLine("OPEN READER");
             ArrayList resultCards = new ArrayList();
@@ -340,11 +340,12 @@ namespace Wild_Card_Server
             return resultCards;
         }
 
+        #region GetCards
         public static Dictionary<int, Card> GetAllCards()
         {
             var result = new Dictionary<int, Card>();
 
-            var query = "SELECT * from cards";
+            var query = "SELECT * from Cards";
             var connection = new MySqlConnection(MySQL.CreateConnectionString());
 
             connection.Open();
@@ -356,7 +357,7 @@ namespace Wild_Card_Server
             {
                 reader = cmd.ExecuteReader();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 throw;
@@ -368,9 +369,26 @@ namespace Wild_Card_Server
             {
                 Card tempCard = new Card();
 
-                tempCard.id = (int)(uint)reader["id"];
-                tempCard.type = (string)reader["type"];
-                result[tempCard.id] =  tempCard;
+                tempCard.ID = (int)reader["id"];
+                tempCard.Type = (string)reader["type"];
+                tempCard.Name = (string)reader["name"];
+                tempCard.IsComboCard = (int)reader["isComboCard"] != 0;
+                tempCard.NForCombo = (int)reader["nForComboCard"];
+                tempCard.ComboCards = new List<int>();
+                for (int i = 1; i <= tempCard.NForCombo; i++)
+                {
+                    var tempString = "comboCard" + i;
+                    tempCard.ComboCards.Add((int)reader[tempString]);
+                }
+
+                tempCard.ComboCards.Sort();
+
+                tempCard.CardImage = (string)reader["cardImage"];
+                tempCard.ItemImage = (string)reader["itemImage"];
+                tempCard.Value = (int)reader["value"];
+                tempCard.Animation = (string)reader["animation"];
+
+                result[tempCard.ID] = tempCard;
             }
 
             reader.Close();
@@ -379,6 +397,88 @@ namespace Wild_Card_Server
             return result;
 
         }
+        public static Dictionary<List<int>, Card> GetCombo4Cards()
+        {
+            var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 4";
+            return GetComboCardsWithQuery(query);
+        }
+        public static Dictionary<List<int>, Card> GetCombo3Cards()
+        {
+            var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 3";
+            return GetComboCardsWithQuery(query);
+        }
+        public static Dictionary<List<int>, Card> GetCombo2Cards()
+        {
+            var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 2";
+            return GetComboCardsWithQuery(query);
+        }
+
+
+        private static Dictionary<List<int>, Card> GetComboCardsWithQuery(string query)
+        {
+            var result = new Dictionary<List<int>, Card>();
+
+
+
+            var connection = new MySqlConnection(MySQL.CreateConnectionString());
+
+            connection.Open();
+
+            var cmd = new MySqlCommand(query, connection);
+            MySqlDataReader reader;
+
+            try
+            {
+                reader = cmd.ExecuteReader();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+
+            //TO DO: To be sure that it's everything that we need in 'Card' class
+            while (reader.Read())
+            {
+                Card tempCard = new Card();
+
+
+                tempCard.ID = (int)reader["id"];
+                tempCard.Type = (string)reader["type"];
+                tempCard.Name = (string)reader["name"];
+                tempCard.IsComboCard = (int)reader["isComboCard"] != 0;
+                tempCard.NForCombo = (int)reader["nForComboCard"];
+                tempCard.ComboCards = new List<int>();
+                for (int i = 1; i <= tempCard.NForCombo; i++)
+                {
+                    var tempString = "comboCard" + i;
+                    int cardID = (int)reader[tempString];
+                    tempCard.ComboCards.Add(cardID);
+
+                }
+                tempCard.ComboCards.Sort();
+
+
+                tempCard.CardImage = (string)reader["cardImage"];
+                tempCard.ItemImage = (string)reader["itemImage"];
+                tempCard.Value = (int)reader["value"];
+                tempCard.Animation = (string)reader["animation"];
+
+
+                result[tempCard.ComboCards] = tempCard;
+            }
+
+            reader.Close();
+            connection.Close();
+
+            return result;
+        }
+
+        #endregion
+
+
+
         public static Dictionary<int,AttackCard> GetAllAttackCards()
         {
 

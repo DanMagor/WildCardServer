@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using System.Collections;
+using System.Runtime.Remoting.Messaging;
 
 namespace Wild_Card_Server
 {
@@ -16,6 +17,7 @@ namespace Wild_Card_Server
         public int matchID;
 
         public bool isActive = false;
+        private bool isCardChoosing = false;
 
         public MySqlConnection matchSQLConnection;
 
@@ -46,6 +48,7 @@ namespace Wild_Card_Server
         {
             ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
             ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
+            StartMatch();
         }
 
         public void StartMatch()
@@ -53,7 +56,7 @@ namespace Wild_Card_Server
             //Wait while both clients are ready
             while (!p1.Ready || !p2.Ready) { }
             isActive = true;
-            SendResults();
+          //  SendResults();
             StartRound();
         }
 
@@ -62,8 +65,6 @@ namespace Wild_Card_Server
         //TODO : REFACTOR IT!!
         public void StartRound()
         {
-            DateTime roundStartTIme;
-            //roundStartTIme = DateTime.Now.Add(TimeSpan.FromSeconds(Constants.LENGTH_OF_ROUND));
             while (isActive)
             {
 
@@ -74,36 +75,43 @@ namespace Wild_Card_Server
                     SendCards();
                     p1.Ready = false;
                     p2.Ready = false;
-                    roundStartTIme = DateTime.Now;
-                    ServerTCP.PACKET_StartRound(p1.connectionID);
-                    ServerTCP.PACKET_StartRound(p2.connectionID);
-
+                    
+                    var timerTime = 5.0f;
+                    ServerTCP.PACKET_StartRound(p1.connectionID,timerTime);
+                    ServerTCP.PACKET_StartRound(p2.connectionID, timerTime);
+                    var timerStartTime = DateTime.Now;
+                    while (DateTime.Now.Subtract(timerStartTime).Seconds <= timerTime) { }
+                    
+                    isCardChoosing = true;
+                    ServerTCP.PACKET_Match_ShowCards(p1.connectionID);
+                    ServerTCP.PACKET_Match_ShowCards(p2.connectionID);
+                    var roundStartTIme = DateTime.Now;
                     while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { }
 
-                    int p1SelectedCardID = p1.selectedCardID;
-                    int p2SelectedCardID = p2.selectedCardID;
+                    isCardChoosing = false;
+                    
                     CalculateResults();
                     SendResults();
                     p1.SetDefaultValuesForResult();
                     p2.SetDefaultValuesForResult();
 
                 }
-                if (p1.health<=0 || p2.health <= 0)
+                if (p1.Health<=0 || p2.Health <= 0)
                 {
                     isActive = false;
                 }
 
             }
 
-            string winnerUsername = "Draw";
-            if (p1.health<=0 && p2.health <= 0)
+            var winnerUsername = "Draw";
+            if (p1.Health<=0 && p2.Health <= 0)
             {
                 ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
                 ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
             }
             else
             {
-                winnerUsername = p1.health < p2.health ? p2.username : p1.username;
+                winnerUsername = p1.Health < p2.Health ? p2.username : p1.username;
                 ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
                 ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
             }
@@ -111,292 +119,345 @@ namespace Wild_Card_Server
 
         private void CalculateResults()
         {
-
-
-            TempPlayer[] players = { p1, p2 };
-            foreach (var player in players)
+            foreach (TempPlayer player in new ArrayList{p1,p2})
             {
-                if (player.selectedCardID != -1)
+                TempPlayer other = player.connectionID == p1.connectionID ? p2 : p1;
+
+                List<int> selfDirection = new List<int>();
+                List<int> enemyDirection = new List<int>();
+                foreach (var card in player.cardsForRoundPos.Values)
                 {
-                    string type = Constants.cards[player.selectedCardID].type;
-                    switch (type)
+
+                    if (card.Selected)
                     {
-                        case "Attack":
-                            CalculateAttackCard(player);
-                            break;
-                        case "Heal":
-                            CalculateHealCard(player);
-                            break;
-                        case "Item":
-                            CalculateItemCard(player);
-                            break;
-                        case "Special":
-                            CalculateSpecialCard(player);
-                            break;
+                        if (card.Direction == 0)
+                        {
+                            selfDirection.Add(card.Position);
+                        }
+                        else
+                        {
+                            enemyDirection.Add(card.Position);
+                        }
                     }
                 }
-                else
+                
+
+                CheckCombos(player, selfDirection);
+                CheckCombos(player, enemyDirection);
+
+                
+
+                foreach (var soloCards in player.results.soloCardsPos)
                 {
-                    CalculateNoCard(player);
+
+                    var card = player.cardsForRoundPos[soloCards];
+
+                    other.results.enemySelectedCards.Add(card.ID);
+
+                    if (card.Direction == 0)
+                    {
+                        card.UseCard(player);
+                    }
+                    else
+                    {
+                        card.UseCard(other);
+                    }
                 }
-            }
-            foreach (var player in players)
-            {
-                player.UpdateStats();
 
-            }
-
-        }
-
-        private void CalculateNoCard(TempPlayer player)
-        {
-            player.UseEffects(false);
-            player.UseEffects(true);
-
-        }
-        private void CalculateAttackCard(TempPlayer player)
-        {
-
-
-            AttackCard card = Constants.attackCards[player.selectedCardID];
-
-            //Add initiative if player was first
-            if (player.initiative && card.initiativeEffect != Constants.NoEffectID)
-            {
-                if (Constants.effects[card.initiativeEffect].selfEffect == 0)
+                foreach (var comboCards in player.results.combos)
                 {
-                    TempPlayer enemy = player == p1 ? p2 : p1;
-                    enemy.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+                    if (comboCards[1] == 0)
+                    {
+                        Constants.Cards[comboCards[0]].UseCard(player);
+                    }
+                    else
+                    {
+                        Constants.Cards[comboCards[0]].UseCard(other);
+                    }
+
+                    other.results.enemySelectedCards.Add(comboCards[0]);
+
                 }
-                else
-                {
-                    player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
-                }
+
+                player.results.playerHP = player.Health;
+                player.results.playerArmor = player.Armor;
+
+                other.results.enemyHP = player.Health;
+                other.results.enemyArmor = player.Armor;
             }
-
-
-
-
-
-
-            //Save temp results for match
-            player.results.dmgPerBullet = card.damage;
-            player.results.bulletsSpent = card.bullets;
-            player.results.accuracy += card.accuracy; //+ because default value for accuracy is 100
-
-            //DETECT Other player for shooting
-            TempPlayer other = player == p1 ? p2 : p1;
-
-            switch (player.bodyPart)
-            {
-                case "Head":
-                    player.AddEffect(Constants.ShootInHeadEffectID, 0, 0);
-                    break;
-                case "Arm":
-                    player.AddEffect(Constants.ShootInArmEffectID, 0, 0);
-                    break;
-                case "Leg":
-                    player.AddEffect(Constants.ShootInLegEffectID, 0, 0);
-                    break;
-                case "Body":
-                    player.AddEffect(Constants.ShootInBodyEffectID, 0, 0);
-                    break;
-            }
-
-
-            //Use PrefEffects
-            player.UseEffects(true);
-
-
             
-
-            player.MakeShots(other);
-
-            //Use Post Effects
-            player.UseEffects(false);
-
         }
-        private void CalculateHealCard(TempPlayer player)
-        {
-            HealCard card = Constants.healCards[player.selectedCardID];
 
-            if (player.initiative && card.initiativeEffect != Constants.NoEffectID)
+        private void CheckCombos(TempPlayer player, List<int> cardPos)
+        {
+            switch (cardPos.Count)
             {
-                if (Constants.effects[card.initiativeEffect].selfEffect == 0)
+                case 4:
+                    Check4CardCombo(player, cardPos ,4);
+                    break;
+                case 3:
+                    Check3CardsCombo(player, cardPos, 3);
+                    break;
+                case 2:
+                    Check2CardsCombo(player, cardPos, 2);
+                    break;
+                case 1:
+                    player.results.soloCardsPos.Add(cardPos[0]);
+                    break;
+                case 0:
+                    break;
+            }
+           
+        }
+
+        private void Check4CardCombo(TempPlayer player, List<int> cardPos, int n)
+        {
+            List<int> temp = new List<int>();
+            foreach (var card in cardPos)
+            {
+               temp.Add(player.cardsForRoundPos[card].ID);
+            }
+
+            temp.Sort();
+
+            if (Constants.Combo4Cards.TryGetValue(temp, out var resultCard))
+            {
+                List<int> comboList = new List<int>();
+                comboList.Add(resultCard.ID);
+                comboList.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+                foreach (var card in cardPos)
                 {
-                    TempPlayer enemy = player == p1 ? p2 : p1;
-                    enemy.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+                    comboList.Add(card);
                 }
-                else
+
+            }
+            else
+            {
+                Check3CardsCombo(player, cardPos, n);
+            }
+            
+            
+        }
+
+        private void Check3CardsCombo(TempPlayer player, List<int> cardPos, int n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
                 {
-                    player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
+                    for (int k = 0; k < n; k++)
+                    {
+                        if (i != j && j != k && i != k)
+                        {
+                            List<int> temp = new List<int>();
+                            temp.Add(player.cardsForRoundPos[i].ID);
+                            temp.Add(player.cardsForRoundPos[j].ID);
+                            temp.Add(player.cardsForRoundPos[k].ID);
+                            temp.Sort();
+
+                            if (Constants.Combo3Cards.TryGetValue(temp, out var resultCard))
+                            {
+                                List<int> comboList = new List<int>();
+                                comboList.Add(resultCard.ID);
+                                comboList.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+                                comboList.Add(i);
+                                comboList.Add(j);
+                                comboList.Add(k);
+
+                                player.results.combos.Add(comboList);
+
+                                HashSet<int> full = new HashSet<int>(){0,1,2,3};
+                                HashSet<int> cards3 = new HashSet<int>(){i,j,k};
+
+
+
+                                full.ExceptWith(cards3);
+                                
+                                player.results.soloCardsPos.Add(full.Max());
+                                
+                                return;
+
+                            }
+
+                        }
+                    }
                 }
             }
 
-            player.results.healing += card.heal;
+            Check2CardsCombo(player, cardPos, n);
 
 
-            switch (player.bodyPart)
+        }
+
+        private void Check2CardsCombo(TempPlayer player, List<int> cardPos, int n)
+        {
+            for (int i = 0; i < n; i++)
             {
-                case "Head":
-                    player.AddEffect(Constants.HealInHeadEffectID, 0, 0);
-                    break;
-                case "Arm":
-                    player.AddEffect(Constants.HealInArmID, 0, 0);
-                    break;
-                case "Leg":
-                    player.AddEffect(Constants.HealInLegID, 0, 0);
-                    break;
-                case "Body":
-                    player.AddEffect(Constants.HealInBodyID, 0, 0);
-                    break;
+                for (int j = 0; j < n; j++)
+                {
+                    if (i != j)
+                    {
+
+                        List<int> temp = new List<int>();
+                        temp.Add(player.cardsForRoundPos[i].ID);
+                        temp.Add(player.cardsForRoundPos[j].ID);
+                    
+                        temp.Sort();
+
+                        if (Constants.Combo2Cards.TryGetValue(temp, out var resultCard))
+                        {
+                            List<int> comboList = new List<int>();
+                            comboList.Add(resultCard.ID);
+                            comboList.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+                            comboList.Add(i);
+                            comboList.Add(j);
+                            player.results.combos.Add(comboList);
+
+                            // Check another 2 cards
+                            HashSet<int> full = new HashSet<int>() { 0, 1, 2, 3 };
+                            HashSet<int> cards2 = new HashSet<int>() { i, j };
+                            full.ExceptWith(cards2);
+                            int firstPosition = full.Max();
+                            int secondPosition = full.Min();
+                            temp.Clear();
+                            temp.Add(player.cardsForRoundPos[firstPosition].ID);
+                            temp.Add(player.cardsForRoundPos[secondPosition].ID);
+                            temp.Sort();
+
+                            if (Constants.Combo2Cards.TryGetValue(temp, out var resultCard2))
+                            {
+                                List<int> comboList2 = new List<int>();
+                                comboList2.Add(resultCard2.ID);
+                                comboList2.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+                                comboList2.Add(firstPosition);
+                                comboList2.Add(secondPosition);
+
+                            }
+                            else
+                            {
+                                player.results.soloCardsPos.Add(firstPosition);
+                                player.results.soloCardsPos.Add(secondPosition);
+                            }
+
+                            return;
+
+                        }
+                    }
+                }
             }
 
-            player.UseEffects(true);
-
-
-
-
-
-
-
-            player.UseEffects(false);
-
+            player.results.soloCardsPos.Add(0);
+            player.results.soloCardsPos.Add(1);
+            player.results.soloCardsPos.Add(2);
+            player.results.soloCardsPos.Add(3);
         }
-        private void CalculateItemCard(TempPlayer player)
+
+
+
+
+
+
+
+        public void ToggleCardSelection(ByteBuffer data)
         {
-            ItemCard card = Constants.itemCards[player.selectedCardID];
+            if (!isCardChoosing) return;
 
+            var cardPos = data.ReadInteger();
+            var connectionID = data.ReadInteger();
 
+            TempPlayer player = p1.connectionID == connectionID ? p1 : p2;
 
-            if (player.initiative && card.initiativeEffect != Constants.NoEffectID)
-            {
-                if (Constants.effects[card.initiativeEffect].selfEffect == 0)
-                {
-                    TempPlayer enemy = player == p1 ? p2 : p1;
-                    enemy.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
-                }
-                else
-                {
-                    player.AddEffect(card.initiativeEffect, card.initiativeValue, card.initiativeDuration);
-                }
-            }
-
-
-            //Use Pred Effects
-            player.UseEffects(true);
-
-            //No Actions here
-
-            //Use Post Effects
-            player.UseEffects(false);
-
+            player.ToggleCardSelection(cardPos);
         }
-        //Temporary just make reload when choose reload card;
-        private void CalculateSpecialCard(TempPlayer player)
-        {
-            player.UseEffects(true);
-            player.n_bullets = player.max_bullets;
-            player.UseEffects(false);
-        }
-        //TODO Rework Logic for random cards for EACH Player from DB
         private void SendCards()
         {
 
-            //TODO CHANGE, NOW WORKS ONLY FOR ATTACK CARDS
-            ArrayList cards = new ArrayList();
+            
+            //TODO: Add logic for Deck and managing probabilities
 
-            Random rand = new Random();
+            var cards = new ByteBuffer();
 
-            //Add Attack Card
-            // TODO: GET BACK, DEBAGGING: 
-            cards.Add(Constants.attackCards.ElementAt(rand.Next(0, Constants.attackCards.Count)).Key);
-            //cards.Add(36);
+            var rand = new Random();
 
-            //Add Heal Card
-            cards.Add(Constants.healCards.ElementAt(rand.Next(0, Constants.healCards.Count)).Key);
+            var numberOfCards = 4;
+            cards.WriteInteger(numberOfCards);
+            for (var i = 0; i < numberOfCards; i++)
+            {
+                Card card = Constants.Cards.ElementAt(rand.Next(0, Constants.Cards.Count)).Value;
 
-            //Add Item Card
-            cards.Add(Constants.itemCards.ElementAt(rand.Next(0, Constants.itemCards.Count)).Key);
+                card.Direction = rand.Next(0, 2);
+                card.Position = i;
 
+                p1.cardsForRoundPos[i] = card;
+               
 
+                p2.cardsForRoundPos[i] = card;
+
+                cards.WriteInteger(card.ID);
+                cards.WriteInteger(card.Direction);
+
+                
+            }
+            
             ServerTCP.PACKET_SendCards(p1.connectionID, cards);
             ServerTCP.PACKET_SendCards(p2.connectionID, cards);
 
         }
         private void SendResults()
         {
-            int p1SelectedCardID = p1.selectedCardID;
-            int p2SelectedCardID = p2.selectedCardID;
-            //Send Info to each player in format: playerHealth, EnemyHealth, PlayerBullets, EnemyBullets, PlayerCard, EnemyCard //Later add: PlayerAction, EnemyAction for animation
-            //for player1:
-            ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger(p1.Health);
-            buffer.WriteInteger(p2.Health);
-            buffer.WriteInteger(p1.Bullets);
-            buffer.WriteInteger(p2.Bullets);
-            buffer.WriteInteger(p1.results.accuracy);
-            buffer.WriteInteger(p2.results.accuracy);
-
-
-            //Send Active Effects
-            //For Player
-            buffer.WriteInteger(p1.effects.Count); //Write Number of Effects
-            foreach (var eff in p1.effects.Keys)
+            foreach (var player in new List<TempPlayer>(){p1,p2})
             {
-                buffer.WriteInteger(eff);
-                buffer.WriteInteger(p1.effects[eff].Item1);//Value
-                buffer.WriteInteger(p1.effects[eff].Item2); //Duration Time
+                var buffer = new ByteBuffer();
+
+                buffer.WriteBool(player.results.amIShot);
+                buffer.WriteInteger(player.results.soloCardsPos.Count);
+                foreach (var resultsSoloCardsPo in player.results.soloCardsPos)
+                {
+                    buffer.WriteInteger(resultsSoloCardsPo);
+                }
+
+
+                buffer.WriteInteger(player.results.combos.Count);
+                foreach (var resultsCombo in player.results.combos)
+                {
+                    buffer.WriteInteger(resultsCombo.Count);
+                    foreach (var insideResult in resultsCombo)
+                    {
+                        buffer.WriteInteger(insideResult);
+                    }
+                }
+
+                List<int> notSelectedCards = new List<int>();
+                foreach (var card in player.cardsForRoundPos.Values)
+                {
+                    if (card.Selected == false)
+                    {
+                        notSelectedCards.Add(card.Position);
+                    }
+                }
+                buffer.WriteInteger(notSelectedCards.Count);
+                foreach (var cardPos in notSelectedCards)
+                {
+                    buffer.WriteInteger(cardPos);
+                }
+
+
+                buffer.WriteInteger(player.results.playerHP);
+                buffer.WriteInteger(player.results.playerArmor);
+
+                buffer.WriteInteger(player.results.enemySelectedCards.Count);
+                foreach (var enemyCards in player.results.enemySelectedCards)
+                {
+                    buffer.WriteInteger(enemyCards);
+                }
+                buffer.WriteInteger(player.results.enemyHP);
+                buffer.WriteInteger(player.results.enemyArmor);
+
+                ////Sending:
+                ServerTCP.PACKET_ShowResult(player.connectionID, buffer.ToArray());
             }
-            //And for opponent
-            buffer.WriteInteger(p2.effects.Count); //Write Number of Effects
-            foreach (var eff in p2.effects.Keys)
-            {
-                buffer.WriteInteger(eff);
-                buffer.WriteInteger(p2.effects[eff].Item1);//Value
-                buffer.WriteInteger(p2.effects[eff].Item2); //Duration Time
-            }
-
-            buffer.WriteInteger(p1SelectedCardID);
-            buffer.WriteInteger(p2SelectedCardID);
-
-            //for player2:
-            ByteBuffer buffer2 = new ByteBuffer();
-            buffer2.WriteInteger(p2.Health);
-            buffer2.WriteInteger(p1.Health);
-            buffer2.WriteInteger(p2.Bullets);
-            buffer2.WriteInteger(p1.Bullets);
-            buffer2.WriteInteger(p2.results.accuracy);
-            buffer2.WriteInteger(p1.results.accuracy);
-            //For Player
-            buffer2.WriteInteger(p2.effects.Count); //Write Number of Effects
-            foreach (var eff in p2.effects.Keys)
-            {
-                buffer2.WriteInteger(eff);
-                buffer2.WriteInteger(p2.effects[eff].Item1);//Value
-                buffer2.WriteInteger(p2.effects[eff].Item2); //Duration Time
-            }
-            //For Opponent
-            buffer2.WriteInteger(p1.effects.Count); //Write Number of Effects
-            foreach (var eff in p1.effects.Keys)
-            {
-                buffer2.WriteInteger(eff);
-                buffer2.WriteInteger(p1.effects[eff].Item1);//Value
-                buffer2.WriteInteger(p1.effects[eff].Item2); //Duration Time
-            }
-
-            buffer2.WriteInteger(p2SelectedCardID);
-            buffer2.WriteInteger(p1SelectedCardID);
-
-            //Set Ready to false, for animations
-            p1.Ready = false;
-            p2.Ready = false;
-            //deselect cards:
-
-
-            //Sending:
-            ServerTCP.PACKET_ShowResult(p1.connectionID, buffer.ToArray());
-            ServerTCP.PACKET_ShowResult(p2.connectionID, buffer2.ToArray());
+            
+            
         }
 
 
@@ -409,6 +470,22 @@ namespace Wild_Card_Server
             ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
             ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
             isActive = true;
+        }
+
+        public void PlayerShot(int connectionID)
+        {
+            if (isCardChoosing)
+            {
+                var player = p1.connectionID == connectionID ? p1 : p2;
+                var other = p1.connectionID == connectionID ? p2 : p1;
+                player.results.amIShot = true;
+                other.results.amIShot = false;
+                player.Ready = true;
+                other.Ready = true;
+
+            }
+
+
         }
 
     }

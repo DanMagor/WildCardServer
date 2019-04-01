@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,40 +10,41 @@ namespace Wild_Card_Server
 {
     class TempPlayer
     {
-
+        public Dictionary<int,Card> cardsForRoundPos; //Position to card
+       
+        
         public int connectionID;
         public int matchID;
         public string username;
-        public RoundResults results = new RoundResults();
-
-        public int health;
-        public int maxHealth = 100;
-        public int max_bullets = 6;
-        public int n_bullets;
-        public Dictionary<int, Tuple<int, int>> effects; //Key - ID of Effect, Tuple: Effect value and remaining duration time 
+        public RoundResults results;
 
 
-
-        public bool initiative = false;
+        public const int maxHealth = 100;
+        private int health;
+        private int armor;
+       
 
         public struct RoundResults
         {
-            public int dmgPerBullet;
-            public int bulletsSpent;
-            public int accuracy;
-            public int evasion;
-            public int healing;
-            public int enemyPureDamage;
-            public int selfdamage;
+            public bool amIShot;
+            public List<int> soloCardsPos; //
+            public List<List<int>> combos; //List of Lists. Each internal Array List is: 1. result card ID 2. Direction 3.sequence of card positions that were combined
+            public int playerHP;
+            public int playerArmor;
+            
+
+            public List<int> enemySelectedCards; // Sequence of cardIDs and directions(int)
+            public int enemyHP;
+            public int enemyArmor;
+
+
+
+
 
         }
 
-
-        //private ArrayList equipment;
-        //private int[] Deck;
-
-        public int selectedCardID = -1;
-        public string bodyPart = "";
+  
+  
         private bool ready = false;
 
         public bool Ready
@@ -54,20 +56,30 @@ namespace Wild_Card_Server
         public int Health
         {
             get { return health; }
+            set { health = value; }
         }
 
-        public int Bullets
+        public int Armor
         {
-            get { return n_bullets; }
+            get { return armor; }
+            set { armor = value; }
         }
 
-        public TempPlayer(int _connectionID, string _username, int HP = 100, int bullets = 6)
+       
+
+        public TempPlayer(int _connectionID, string _username, int HP = 100)
         {
             connectionID = _connectionID;
             username = _username;
             health = HP;
-            n_bullets = bullets;
-            effects = new Dictionary<int, Tuple<int, int>>();
+            cardsForRoundPos = new Dictionary<int, Card>();
+            results = new RoundResults
+            {
+                soloCardsPos = new List<int>(),
+                combos = new List<List<int>>(),
+                enemySelectedCards = new List<int>()
+            };
+
             SetDefaultValuesForResult();
 
         }
@@ -76,103 +88,58 @@ namespace Wild_Card_Server
 
         public void MakeShots(TempPlayer p2)
         {
-            results.bulletsSpent = Math.Min(n_bullets, results.bulletsSpent);
-
-            
-                //Check Do we hit or not
-                if (CheckHit(p2))
-                {
-                    p2.results.selfdamage += results.dmgPerBullet * results.bulletsSpent;
-                }
-
-                //In any case we spent bullet
-                n_bullets -= results.bulletsSpent;
-            
-            n_bullets = Math.Min(n_bullets, max_bullets);
-
+           
         }
         public void UpdateStats()
         {
-            UpdateEffects();
-            ReceiveDamage();
-            ReceiveHeal();
-            selectedCardID = -1;
-
 
         }
-        public bool CheckHit(TempPlayer p2)
+
+        public void ToggleCardSelection(int cardPos)
         {
-            Random r = new Random();
-            bool hit = r.Next(0, 100) < results.accuracy;
-            if (hit)
+            if (cardsForRoundPos.ContainsKey(cardPos))
             {
-                return p2.results.evasion < r.Next(0, 100);
+                cardsForRoundPos[cardPos].Selected = !cardsForRoundPos[cardPos].Selected;
             }
-
-            return false;
-        }
-
-        public void DealPureDamage(TempPlayer p2, int damage)
-        {
-            p2.results.selfdamage += damage;
-        }
-
-        public void ReceivePureDamage(int damage)
-        {
-            results.selfdamage += damage;
-        }
-
-        private void ReceiveDamage()
-        {
-            health = Math.Max(health - results.selfdamage, 0);
-        }
-        private void ReceiveHeal()
-        {
-            health = Math.Min(health + results.healing, maxHealth);
-        }
-
-        public void AddEffect(int effectID, int value, int duration)
-        {
-            effects[effectID] = Tuple.Create(value, duration);
-        }
-        public void UpdateEffects()
-        {
-            foreach (var eff in effects.ToList())
+            else
             {
-                effects[eff.Key] = Tuple.Create(eff.Value.Item1, eff.Value.Item2 - 1);
-                if (effects[eff.Key].Item2 <= 0)
-                {
-                    effects.Remove(eff.Key);
-                }
+                Console.WriteLine("Wrong Card Position in Toggle Card");
+            }
+            
+        }
+
+
+
+        public void GetDamage(int value)
+        {
+            if (armor <= 0)
+            {
+                health -= value;
+            }
+            else
+            {
+                armor = Math.Max(0, armor - value);
             }
         }
-        public void UseEffects(bool isPredEffect)
+
+        public void GetHeal(int value)
         {
+            health = Math.Min(maxHealth, health + value);
+        }
 
-            foreach (var keyEff in effects.Keys.ToList())
-            {
-                if (!(Constants.effects[keyEff].predEffect == 1 ^ isPredEffect)) //Used for separation Pred and Post effects in one Dictionary
-                {
-                    string delegateName = Constants.effects[keyEff].delegateName;
-                    if (MatchConstants.effects.TryGetValue(delegateName, out MatchConstants.UseEffect effect))
-                    {
-                        effect.Invoke(this, effects[keyEff].Item1);
-                    }
-                }
-            }
-
-
+        public void GetArmor(int value)
+        {
+            armor += value;
         }
 
         public void SetDefaultValuesForResult()
         {
-            results.dmgPerBullet = 0;
-            results.bulletsSpent = 0;
-            results.accuracy = 100;
-            results.evasion = 0;
-            results.healing = 0;
-            results.selfdamage = 0;
-            initiative = false;
+            cardsForRoundPos.Clear();
+            results = new RoundResults();
+            results.soloCardsPos = new List<int>();
+            results.combos = new List<List<int>>();
+            results.enemySelectedCards = new List<int>();
+            
         }
 
 

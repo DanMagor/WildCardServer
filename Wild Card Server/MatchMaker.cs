@@ -16,7 +16,7 @@ namespace Wild_Card_Server
 
         private static int matchID = 0;
 
-        public static ServerMatchManager[] matches = new ServerMatchManager[Constants.MAX_MATCHES]; //TODO Rework to LIST or fix NULL Problem
+        public static Dictionary<int,ServerMatchManager> Matches = new Dictionary<int, ServerMatchManager>(); 
 
 
 
@@ -27,8 +27,7 @@ namespace Wild_Card_Server
             if (!isSearching)
             {
                 isSearching = true;
-                searchingThread = new Thread(SearchingLoop);
-                searchingThread.Name = "SearchingThread";
+                searchingThread = new Thread(SearchingLoop) {Name = "SearchingThread"}; //Simplified Initialization
                 searchingThread.Start();
 
             }
@@ -44,8 +43,8 @@ namespace Wild_Card_Server
                     players.RemoveAt(0);
                     TempPlayer player2 = players[0];
                     players.RemoveAt(0);
-                    matches[matchID]= new ServerMatchManager(matchID, player1, player2);
-                    matches[matchID].InitializeMatch();
+                    Matches[matchID]= new ServerMatchManager(matchID, player1, player2);
+                    Matches[matchID].InitializeMatch();
 
                     matchID++;
                     
@@ -56,10 +55,9 @@ namespace Wild_Card_Server
 
         public static void StartMatch(int matchID)
         {
-            if (matches[matchID].p1.Ready && matches[matchID].p2.Ready)
+            if (Matches[matchID].p1.Ready && Matches[matchID].p2.Ready)
             {
-                Thread matchThread = new Thread(matches[matchID].StartMatch);
-                matchThread.Name = "Match " + matchID.ToString();
+                var matchThread = new Thread(Matches[matchID].StartMatch) {Name = "Match " + matchID.ToString()};
                 matchThread.Start();
             }
         }

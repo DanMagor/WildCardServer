@@ -1,26 +1,55 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine.Experimental.UIElements;
 
 namespace Wild_Card_Server
 {
     class Card
     {
-        public int id;
-        public string type;
-        //public string name;
-        //public string image;
+        public int ID; // ID in database
+        public int Position;
+        public bool Selected;
+        public string Type;
+        public string Name;
+        public bool IsComboCard; // is it possible to get this card by combo
+        public int NForCombo; //number of Cards that are needed if this card could be made from combo
+        public List<int> ComboCards; //IDs of such Cards
+        public string CardImage; //filename for client
+        public string ItemImage; // filename for client 
+        public int Value; // Value of card. Damage, heal, bonus
+        public string Animation; // Name of the animation for client
+        public int Direction; //0-self, 1 - enemy
 
-        //public string initiativeName;
-        //public string initiativeEffect;
-        //public int initiativeValue;
-        //public int initiativeDuration;
 
-        //public string additionalEffectName;
-        //public string additionalEffect;
-        //public int additionalEffectValue;
-        //public int additionalEffectDuration;
+        public void UseCard(TempPlayer player)
+        {
+            switch (Type) 
+            {
+                case "Attack":
+                    player.GetDamage(Value);
+                    break;
+                case "Heal":
+                    player.GetHeal(Value);
+                    break;
+                case "Armor":
+                    player.GetArmor(Value);
+                    break;
+                case "Item":
+                    player.GetDamage(Value);
+                    break;
+                default:
+                    Console.WriteLine("Something Wrong. No type on card");;
+                    break;
+            }
+        }
+
+      
+
+
+
     }
 }

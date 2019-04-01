@@ -45,8 +45,6 @@ namespace Wild_Card_Server
                     clientObjects[i] = new ClientObject(tempClient, i);
 
                     Console.WriteLine("Incoming Connection from {0}", clientObjects[i].socket.Client.RemoteEndPoint.ToString());
-
-                    ServerTCP.PACKET_WelcomeMsg(i, "Welcome to my Server");
                     return;
                 }
             }
@@ -73,18 +71,9 @@ namespace Wild_Card_Server
             }
         }
 
-        public static void PACKET_WelcomeMsg(int connectionID, string msg)
-        {
-            ByteBuffer buffer = new ByteBuffer();
+        
 
-            //1 step always add the package id
-            buffer.WriteInteger((int)ServerPackages.SWelcomeMsg);
-
-            //2 step send the information that you want to.
-            buffer.WriteString(msg);
-            SendDataTo(connectionID, buffer.ToArray());
-        }
-
+        //TODO: Add some data for Menu Loading Here
         public static void PACKET_LoadMenu(int connectionID, string username)
         {
             ByteBuffer buffer = new ByteBuffer();
@@ -96,6 +85,8 @@ namespace Wild_Card_Server
 
         }
 
+
+        //TODO: Add all data that needed for match here
         public static void PACKET_LoadMatch(int connectionID, int matchID)
         {
             ByteBuffer buffer = new ByteBuffer();
@@ -105,15 +96,15 @@ namespace Wild_Card_Server
             buffer.WriteInteger(matchID);
 
             //Check Which players we sending data, cause we also want to send Enemy Username in Package
-            if (MatchMaker.matches[matchID].p1.connectionID == connectionID)
-            {
-                buffer.WriteString(MatchMaker.matches[matchID].p2.username);
-            }
-            else
-            {
-                buffer.WriteString(MatchMaker.matches[matchID].p1.username);
-            }
+            //Write Player Username for scene loading
+            buffer.WriteString(MatchMaker.Matches[matchID].p1.connectionID == connectionID
+                ? MatchMaker.Matches[matchID].p1.username
+                : MatchMaker.Matches[matchID].p2.username);
 
+            //Write Enemy Username
+            buffer.WriteString(MatchMaker.Matches[matchID].p1.connectionID == connectionID
+                ? MatchMaker.Matches[matchID].p1.username
+                : MatchMaker.Matches[matchID].p2.username);
 
 
             SendDataTo(connectionID, buffer.ToArray());
@@ -121,110 +112,59 @@ namespace Wild_Card_Server
 
         public static void PACKET_SendAllCards(int connectionID)
         {
-            ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SSendAllCardsAndEffects);
 
-            //Write Attack Cards in Buffer
-            buffer.WriteInteger(Constants.attackCards.Count); // Save number of Attack Cards for reading on Client
-            foreach (var card in Constants.attackCards.Values)
+            //TODO: Delete Later unneeded fields for client
+            var buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SSendAllCards);
+
+            buffer.WriteInteger(Constants.Cards.Count); // Number of cards in dictionary
+
+            foreach (var card in Constants.Cards.Values) // Write each card in buffer
             {
-                //General Info
-                buffer.WriteInteger(card.id);
-                buffer.WriteString(card.type);
-                buffer.WriteString(card.name);
-                buffer.WriteString(card.image);
-
-                //Attack Card Info
-                buffer.WriteInteger(card.damage);
-                buffer.WriteInteger(card.bullets);
-                buffer.WriteInteger(card.accuracy);
-
-                //Initiative Effect
-                
-                buffer.WriteInteger(card.initiativeEffect);
-                buffer.WriteInteger(card.initiativeValue);
-                buffer.WriteInteger(card.initiativeDuration);
-
-                
-            }
-
-            //Write Heal Cards in Buffer
-            buffer.WriteInteger(Constants.healCards.Count); // Save number of Heal Cards for reading on Client
-            foreach (var card in Constants.healCards.Values)
-            {
-                //General Info
-                buffer.WriteInteger(card.id);
-                buffer.WriteString(card.type);
-
-                buffer.WriteString(card.name);
-                buffer.WriteString(card.image);
-
-                //Heal Card Info
-                buffer.WriteInteger(card.heal);
-                
-                //Initiative Effect
-                buffer.WriteInteger(card.initiativeEffect);
-                buffer.WriteInteger(card.initiativeValue);
-                buffer.WriteInteger(card.initiativeDuration);
-
-            }
-
-            //Write Item Cards in buffer
-            buffer.WriteInteger(Constants.itemCards.Count); // Save number of Item Cards for reading on Client
-            foreach (var card in Constants.itemCards.Values)
-            {
-                //General Info
-                 buffer.WriteInteger(card.id);
-                buffer.WriteString(card.type);
-                buffer.WriteString(card.name);
-                buffer.WriteString(card.image);
-
-                //Item Card Info 
-                buffer.WriteInteger(card.itemDuration);
-                buffer.WriteString(card.itemEffectLabel);
-                buffer.WriteString(card.itemEffectImage);
-
-                //Initiative Effect
-                buffer.WriteInteger(card.initiativeEffect);
-                buffer.WriteInteger(card.initiativeValue);
-                buffer.WriteInteger(card.initiativeDuration);
-
-            }
+                buffer.WriteInteger(card.ID);
+                buffer.WriteString(card.Name);
+                buffer.WriteString(card.Type);
+                buffer.WriteBool(card.IsComboCard);
+                buffer.WriteInteger(card.NForCombo);
+                for (var i=0;  i<card.NForCombo; i++)
+                { 
+                    buffer.WriteInteger(card.ComboCards[i]);
+                }
+                buffer.WriteString(card.CardImage);
+                buffer.WriteString(card.ItemImage);
+                buffer.WriteInteger(card.Value);
+                buffer.WriteString(card.Animation);
 
 
-            //Write All effects info
-            buffer.WriteInteger(Constants.effects.Count);
-            foreach (var effect in Constants.effects.Values)
-            {
-                buffer.WriteInteger(effect.ID);
-                buffer.WriteString(effect.name);
-                buffer.WriteString(effect.image);
+
             }
             
 
-            SendDataTo(connectionID, buffer.ToArray());
+            SendDataTo(connectionID, buffer.ToArray()); //sending data to client
 
         }
 
-        public static void PACKET_SendCards(int connectionID, ArrayList cards)
+        public static void PACKET_SendCards(int connectionID, ByteBuffer cards)
         {
-            ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SSendCards);
-            buffer.WriteInteger(cards.Count);
-
-            foreach (int card_id in cards)
-            {
-                buffer.WriteInteger(card_id);
-            }
+            var buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SSendMatchCards);
+            buffer.WriteBytes(cards.ToArray());
             SendDataTo(connectionID, buffer.ToArray());
 
         }
 
-        public static void PACKET_StartRound(int connectionID)
+        public static void PACKET_StartRound(int connectionID, float timerTime)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SStartRound);
+            buffer.WriteFloat(timerTime);
+            SendDataTo(connectionID, buffer.ToArray());
+        }
 
+        public static void PACKET_Match_ShowCards(int connectionID)
+        {
+            var buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SShowCards);
             SendDataTo(connectionID, buffer.ToArray());
         }
 

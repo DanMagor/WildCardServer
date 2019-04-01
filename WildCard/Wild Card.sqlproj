@@ -59,6 +59,6 @@
     <Folder Include="Properties" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="Cards.sql" />
+    <Build Include="cards.sql" />
   </ItemGroup>
 </Project>

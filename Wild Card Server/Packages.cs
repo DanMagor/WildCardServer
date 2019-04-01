@@ -4,9 +4,10 @@
     SAlertMsg,
     SLoadMenu,
     SLoadMatch,
-    SSendAllCardsAndEffects,
-    SSendCards,
+    SSendAllCards,
+    SSendMatchCards,
     SStartRound,
+    SShowCards,
     SShowResult,
     SFinishGame,
 
@@ -15,12 +16,12 @@
 public enum ClientPackages
 {
     CLogin = 1,
-    CThankYou,
-    CNewAccount,
+    CShot,
     CSearchOpponent,
     CReadyForMatch,
     CReadyForRound,
-    CSendSelectedCard,
+    CSendToggleCard,
+
     CRestartMatch,
 }
 
