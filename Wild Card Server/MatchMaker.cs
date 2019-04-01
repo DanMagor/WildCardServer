@@ -24,13 +24,33 @@ namespace Wild_Card_Server
         {
             
             players.Add(new TempPlayer(connectionID, username));
-            if (!isSearching)
+            if (players.Count == 2)
             {
-                isSearching = true;
-                searchingThread = new Thread(SearchingLoop) {Name = "SearchingThread"}; //Simplified Initialization
-                searchingThread.Start();
+                TempPlayer player1 = players[0];
+                players.RemoveAt(0);
+                TempPlayer player2 = players[0];
+                players.RemoveAt(0);
+                Matches[matchID] = new ServerMatchManager(matchID, player1, player2);
+
+                Matches[matchID].InitializeMatch();
+                while (!Matches[matchID].p1.Ready && !Matches[matchID].p2.Ready) { }
+                if (Matches[matchID].p1.Ready && Matches[matchID].p2.Ready)
+                {
+                    var matchThread = new Thread(Matches[matchID].StartMatch) { Name = "Match " + matchID.ToString() };
+                    matchThread.Start();
+                }
+                
+
+                matchID++;
 
             }
+            //if (!isSearching)
+            //{
+            //    isSearching = true;
+            //    searchingThread = new Thread(SearchingLoop) {Name = "SearchingThread"}; //Simplified Initialization
+            //    searchingThread.Start();
+
+            //}
             
         }
         public static void SearchingLoop()

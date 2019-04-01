@@ -48,7 +48,7 @@ namespace Wild_Card_Server
         {
             ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
             ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
-            StartMatch();
+           // StartMatch();
         }
 
         public void StartMatch()
@@ -72,7 +72,9 @@ namespace Wild_Card_Server
                 if ((p1.Ready && p2.Ready))
                 {
 
-                    SendCards();
+                  //  SendCards();
+                    TEMP_SendComboCards();
+
                     p1.Ready = false;
                     p2.Ready = false;
                     
@@ -96,7 +98,7 @@ namespace Wild_Card_Server
                     p2.SetDefaultValuesForResult();
 
                 }
-                if (p1.Health<=0 || p2.Health <= 0)
+                if (p1.Health<=10000 || p2.Health <= 10000)
                 {
                     isActive = false;
                 }
@@ -313,31 +315,36 @@ namespace Wild_Card_Server
                             comboList.Add(j);
                             player.results.combos.Add(comboList);
 
-                            // Check another 2 cards
-                            HashSet<int> full = new HashSet<int>() { 0, 1, 2, 3 };
-                            HashSet<int> cards2 = new HashSet<int>() { i, j };
-                            full.ExceptWith(cards2);
-                            int firstPosition = full.Max();
-                            int secondPosition = full.Min();
-                            temp.Clear();
-                            temp.Add(player.cardsForRoundPos[firstPosition].ID);
-                            temp.Add(player.cardsForRoundPos[secondPosition].ID);
-                            temp.Sort();
-
-                            if (Constants.Combo2Cards.TryGetValue(temp, out var resultCard2))
+                            // Check another 2 cards if we have it
+                            if (cardPos.Count == 4)
                             {
-                                List<int> comboList2 = new List<int>();
-                                comboList2.Add(resultCard2.ID);
-                                comboList2.Add(player.cardsForRoundPos[cardPos[0]].Direction);
-                                comboList2.Add(firstPosition);
-                                comboList2.Add(secondPosition);
+                                HashSet<int> full = new HashSet<int>() {0, 1, 2, 3};
+                                HashSet<int> cards2 = new HashSet<int>() {i, j};
+                                full.ExceptWith(cards2);
+                                int firstPosition = full.Max();
+                                int secondPosition = full.Min();
+                                temp.Clear();
+                                temp.Add(player.cardsForRoundPos[firstPosition].ID);
+                                temp.Add(player.cardsForRoundPos[secondPosition].ID);
+                                temp.Sort();
 
+                                if (Constants.Combo2Cards.TryGetValue(temp, out var resultCard2))
+                                {
+                                    List<int> comboList2 = new List<int>();
+                                    comboList2.Add(resultCard2.ID);
+                                    comboList2.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+                                    comboList2.Add(firstPosition);
+                                    comboList2.Add(secondPosition);
+                                    player.results.combos.Add(comboList2);
+
+                                }
+                                else
+                                {
+                                    player.results.soloCardsPos.Add(firstPosition);
+                                    player.results.soloCardsPos.Add(secondPosition);
+                                }
                             }
-                            else
-                            {
-                                player.results.soloCardsPos.Add(firstPosition);
-                                player.results.soloCardsPos.Add(secondPosition);
-                            }
+
 
                             return;
 
@@ -346,10 +353,18 @@ namespace Wild_Card_Server
                 }
             }
 
-            player.results.soloCardsPos.Add(0);
-            player.results.soloCardsPos.Add(1);
-            player.results.soloCardsPos.Add(2);
-            player.results.soloCardsPos.Add(3);
+
+            //List<int> combo = new List<int>();
+            //combo.Add(4);
+            //combo.Add(player.cardsForRoundPos[cardPos[0]].Direction);
+            //combo.Add(1);
+            //combo.Add(2);
+            //player.results.combos.Add(combo);
+            foreach (var cPosition in cardPos)
+            {
+                player.results.soloCardsPos.Add(cPosition);
+            }
+
         }
 
 
@@ -368,6 +383,55 @@ namespace Wild_Card_Server
             TempPlayer player = p1.connectionID == connectionID ? p1 : p2;
 
             player.ToggleCardSelection(cardPos);
+
+            ServerTCP.PACKET_ConfirmToggleCard(player.connectionID);
+        }
+
+        private void TEMP_SendComboCards()
+        {
+            var cards = new ByteBuffer();
+            cards.WriteInteger(4);
+            var card = Constants.Cards[1];
+            
+            card.Selected = false;
+            card.Direction = 1;
+            cards.WriteInteger(card.ID);
+            cards.WriteInteger(card.Direction);
+            card.Position = 0;
+            p1.cardsForRoundPos[0] = card;
+            p2.cardsForRoundPos[0] = card;
+
+            card = Constants.Cards[1];
+            card.Selected = false;
+            card.Direction = 1;
+            cards.WriteInteger(card.ID);
+            cards.WriteInteger(card.Direction);
+            card.Position = 1;
+            p1.cardsForRoundPos[1] = card;
+            p2.cardsForRoundPos[1] = card;
+
+            card = Constants.Cards[5];
+            card.Selected = false;
+            card.Direction = 1;
+            cards.WriteInteger(card.ID);
+            cards.WriteInteger(card.Direction);
+            card.Position = 2;
+            p1.cardsForRoundPos[2] = card;
+            p2.cardsForRoundPos[2] = card;
+
+            card = Constants.Cards[5];
+            card.Selected = false;
+            card.Direction = 1;
+            cards.WriteInteger(card.ID);
+            cards.WriteInteger(card.Direction);
+            card.Position = 3;
+            p1.cardsForRoundPos[3] = card;
+            p2.cardsForRoundPos[3] = card;
+
+
+            ServerTCP.PACKET_SendCards(p1.connectionID, cards);
+            ServerTCP.PACKET_SendCards(p2.connectionID, cards);
+
         }
         private void SendCards()
         {
@@ -384,6 +448,8 @@ namespace Wild_Card_Server
             for (var i = 0; i < numberOfCards; i++)
             {
                 Card card = Constants.Cards.ElementAt(rand.Next(0, Constants.Cards.Count)).Value;
+
+                card.Selected = false;
 
                 card.Direction = rand.Next(0, 2);
                 card.Position = i;

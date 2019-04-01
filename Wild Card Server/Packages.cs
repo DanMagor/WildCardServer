@@ -10,6 +10,7 @@
     SShowCards,
     SShowResult,
     SFinishGame,
+    SConfirmToggleCard,
 
 }
 

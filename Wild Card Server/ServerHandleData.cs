@@ -18,7 +18,7 @@ namespace Wild_Card_Server
             packetListener.Add((int)ClientPackages.CSearchOpponent, HandleSearch);
             packetListener.Add((int)ClientPackages.CReadyForMatch, HandleReadyForMatch);
             packetListener.Add((int)ClientPackages.CReadyForRound, HandleReadyForRound);
-            packetListener.Add((int)ClientPackages.CSendToggleCard, Handle_Match_SelectedCard);
+            packetListener.Add((int)ClientPackages.CSendToggleCard, Handle_Toggle_Card);
             packetListener.Add((int)ClientPackages.CRestartMatch, HandleRestartMatch);
             packetListener.Add((int)ClientPackages.CShot, Handle_Match_Shot);
 
@@ -205,7 +205,7 @@ namespace Wild_Card_Server
             }
         }
 
-        private static void Handle_Match_SelectedCard(int connectionID, byte[] data)
+        private static void Handle_Toggle_Card(int connectionID, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteBytes(data);

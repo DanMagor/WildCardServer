@@ -178,6 +178,14 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
+        public static void PACKET_ConfirmToggleCard(int connectionID)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SConfirmToggleCard);
+            SendDataTo(connectionID, buffer.ToArray());
+        }
+
+
         public static void PACKET_FinishGame(int connectionID, string winnerUsername)
         {
             ByteBuffer buffer = new ByteBuffer();
