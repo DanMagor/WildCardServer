@@ -19,7 +19,23 @@ namespace Wild_Card_Server
         public static Dictionary<List<int>,Card> Combo3Cards = Database.GetCombo3Cards();
         public static Dictionary<List<int>,Card> Combo2Cards = Database.GetCombo2Cards();
 
+        public class ListComparer<T> : IEqualityComparer<List<T>>
+        {
+            public bool Equals(List<T> x, List<T> y)
+            {
+                return x.SequenceEqual(y);
+            }
 
+            public int GetHashCode(List<T> obj)
+            {
+                int hashcode = 0;
+                foreach (T t in obj)
+                {
+                    hashcode ^= t.GetHashCode();
+                }
+                return hashcode;
+            }
+        }
 
 
 

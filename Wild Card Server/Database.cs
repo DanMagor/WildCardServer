@@ -416,7 +416,9 @@ namespace Wild_Card_Server
 
         private static Dictionary<List<int>, Card> GetComboCardsWithQuery(string query)
         {
-            var result = new Dictionary<List<int>, Card>();
+
+            var comparer = new Constants.ListComparer<int>();
+            var result = new Dictionary<List<int>, Card>(comparer);
 
 
 

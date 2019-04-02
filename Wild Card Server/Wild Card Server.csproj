@@ -55,6 +55,7 @@
     <Compile Include="AttackCard.cs" />
     <Compile Include="Card.cs" />
     <Compile Include="ClientObject.cs" />
+    <Compile Include="CombinationSequence.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Effect.cs" />

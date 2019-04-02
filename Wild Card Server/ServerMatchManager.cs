@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using System.Collections;
 using System.Runtime.Remoting.Messaging;
+using UnityEngine;
+using Random = System.Random;
 
 namespace Wild_Card_Server
 {
@@ -344,6 +346,13 @@ namespace Wild_Card_Server
                                     player.results.soloCardsPos.Add(secondPosition);
                                 }
                             }
+                            else if (cardPos.Count == 3)
+                            {
+                                HashSet<int> full = new HashSet<int>(cardPos);
+                                HashSet<int> card2 = new HashSet<int>(){i,j};
+                                full.ExceptWith(card2);
+                                player.results.soloCardsPos.Add(full.Min());
+                            }
 
 
                             return;
@@ -391,7 +400,7 @@ namespace Wild_Card_Server
         {
             var cards = new ByteBuffer();
             cards.WriteInteger(4);
-            var card = Constants.Cards[1];
+            var card = Constants.Cards[1].Clone();
             
             card.Selected = false;
             card.Direction = 1;
@@ -399,27 +408,27 @@ namespace Wild_Card_Server
             cards.WriteInteger(card.Direction);
             card.Position = 0;
             p1.cardsForRoundPos[0] = card;
-            p2.cardsForRoundPos[0] = card;
+            p2.cardsForRoundPos[0] = card.Clone();
 
-            card = Constants.Cards[1];
+            card = Constants.Cards[1].Clone();
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
             cards.WriteInteger(card.Direction);
             card.Position = 1;
             p1.cardsForRoundPos[1] = card;
-            p2.cardsForRoundPos[1] = card;
+            p2.cardsForRoundPos[1] = card.Clone();
 
-            card = Constants.Cards[5];
+            card = Constants.Cards[5].Clone();
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
             cards.WriteInteger(card.Direction);
             card.Position = 2;
             p1.cardsForRoundPos[2] = card;
-            p2.cardsForRoundPos[2] = card;
+            p2.cardsForRoundPos[2] = card.Clone();
 
-            card = Constants.Cards[5];
+            card = Constants.Cards[5].Clone();
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine.Experimental.UIElements;
@@ -27,7 +28,7 @@ namespace Wild_Card_Server
 
         public void UseCard(TempPlayer player)
         {
-            switch (Type) 
+            switch (Type)
             {
                 case "Attack":
                     player.GetDamage(Value);
@@ -42,14 +43,34 @@ namespace Wild_Card_Server
                     player.GetDamage(Value);
                     break;
                 default:
-                    Console.WriteLine("Something Wrong. No type on card");;
+                    Console.WriteLine("Something Wrong. No type on card");
+                    ;
                     break;
             }
         }
 
-      
+        public Card Clone()
+        {
+            var clone = new Card()
+            {
+                ID = this.ID,
+                Position = this.Position,
+                Selected = this.Selected,
+                Type = this.Type,
+                Name = this.Name,
+                IsComboCard = this.IsComboCard,
+                NForCombo = this.NForCombo,
+                ComboCards = new List<int>(this.ComboCards),
+                CardImage = this.CardImage,
+                ItemImage = this.ItemImage,
+                Value = this.Value,
+                Animation = this.Animation,
+                Direction = this.Direction
+            };
+            return clone;
 
-
-
+        }
     }
 }
+
+
