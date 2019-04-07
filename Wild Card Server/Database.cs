@@ -341,9 +341,9 @@ namespace Wild_Card_Server
         }
 
         #region GetCards
-        public static Dictionary<int, Card> GetAllCards()
+        public static Dictionary<int, DBInstanceCard> GetAllCards()
         {
-            var result = new Dictionary<int, Card>();
+            var result = new Dictionary<int, DBInstanceCard>();
 
             var query = "SELECT * from Cards";
             var connection = new MySqlConnection(MySQL.CreateConnectionString());
@@ -367,7 +367,7 @@ namespace Wild_Card_Server
             //TO DO: To be sure that it's everything that we need in 'Card' class
             while (reader.Read())
             {
-                Card tempCard = new Card();
+                DBInstanceCard tempCard = new DBInstanceCard();
 
                 tempCard.ID = (int)reader["id"];
                 tempCard.Type = (string)reader["type"];
@@ -397,28 +397,28 @@ namespace Wild_Card_Server
             return result;
 
         }
-        public static Dictionary<List<int>, Card> GetCombo4Cards()
+        public static Dictionary<List<int>, DBInstanceCard> GetCombo4Cards()
         {
             var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 4";
             return GetComboCardsWithQuery(query);
         }
-        public static Dictionary<List<int>, Card> GetCombo3Cards()
+        public static Dictionary<List<int>, DBInstanceCard> GetCombo3Cards()
         {
             var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 3";
             return GetComboCardsWithQuery(query);
         }
-        public static Dictionary<List<int>, Card> GetCombo2Cards()
+        public static Dictionary<List<int>, DBInstanceCard> GetCombo2Cards()
         {
             var query = "SELECT * from Cards WHERE isComboCard = 1 AND nForComboCard = 2";
             return GetComboCardsWithQuery(query);
         }
 
 
-        private static Dictionary<List<int>, Card> GetComboCardsWithQuery(string query)
+        private static Dictionary<List<int>, DBInstanceCard> GetComboCardsWithQuery(string query)
         {
 
             var comparer = new Constants.ListComparer<int>();
-            var result = new Dictionary<List<int>, Card>(comparer);
+            var result = new Dictionary<List<int>, DBInstanceCard>(comparer);
 
 
 
@@ -443,7 +443,7 @@ namespace Wild_Card_Server
             //TO DO: To be sure that it's everything that we need in 'Card' class
             while (reader.Read())
             {
-                Card tempCard = new Card();
+                DBInstanceCard tempCard = new DBInstanceCard();
 
 
                 tempCard.ID = (int)reader["id"];

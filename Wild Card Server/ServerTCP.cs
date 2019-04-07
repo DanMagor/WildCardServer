@@ -57,7 +57,6 @@ namespace Wild_Card_Server
             buffer.WriteBytes(data);
             clientObjects[connectionID].myStream.BeginWrite(buffer.ToArray(), 0, buffer.ToArray().Length, null, null);
             buffer.Dispose();
-
         }
 
 
@@ -103,8 +102,8 @@ namespace Wild_Card_Server
 
             //Write Enemy Username
             buffer.WriteString(MatchMaker.Matches[matchID].p1.connectionID == connectionID
-                ? MatchMaker.Matches[matchID].p1.username
-                : MatchMaker.Matches[matchID].p2.username);
+                ? MatchMaker.Matches[matchID].p2.username
+                : MatchMaker.Matches[matchID].p1.username);
 
 
             SendDataTo(connectionID, buffer.ToArray());

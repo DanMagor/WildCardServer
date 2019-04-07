@@ -14,10 +14,10 @@ namespace Wild_Card_Server
         public static int MAX_MATCHES = 256;
         public static float LENGTH_OF_ROUND = 3.0f;
 
-        public static Dictionary<int, Card> Cards = Database.GetAllCards();
-        public static Dictionary<List<int>,Card> Combo4Cards = Database.GetCombo4Cards();
-        public static Dictionary<List<int>,Card> Combo3Cards = Database.GetCombo3Cards();
-        public static Dictionary<List<int>,Card> Combo2Cards = Database.GetCombo2Cards();
+        public static Dictionary<int, DBInstanceCard> Cards = Database.GetAllCards();
+        public static Dictionary<List<int>, DBInstanceCard> Combo4Cards = Database.GetCombo4Cards();
+        public static Dictionary<List<int>, DBInstanceCard> Combo3Cards = Database.GetCombo3Cards();
+        public static Dictionary<List<int>, DBInstanceCard> Combo2Cards = Database.GetCombo2Cards();
 
         public class ListComparer<T> : IEqualityComparer<List<T>>
         {

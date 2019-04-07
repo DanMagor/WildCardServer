@@ -26,6 +26,26 @@ namespace Wild_Card_Server
         public int Direction; //0-self, 1 - enemy
 
 
+        private Card()
+        {
+
+        }
+
+        public Card(DBInstanceCard dbCard)
+        {
+            ID = dbCard.ID;
+            Type = dbCard.Type;
+            Name = dbCard.Name;
+            IsComboCard = dbCard.IsComboCard;
+            NForCombo = dbCard.NForCombo;
+            ComboCards = new List<int>(dbCard.ComboCards);
+            CardImage = dbCard.CardImage;
+            ItemImage = dbCard.ItemImage;
+            Value = dbCard.Value;
+            Animation = dbCard.Animation;
+
+        }
+
         public void UseCard(TempPlayer player)
         {
             switch (Type)

@@ -182,8 +182,6 @@ namespace Wild_Card_Server
                 Console.WriteLine("Player '{0}' ready for match", MatchMaker.Matches[matchID].p2.username);
             }
 
-            MatchMaker.StartMatch(matchID);
-
         }
 
         private static void HandleReadyForRound(int connectionID, byte[] data)

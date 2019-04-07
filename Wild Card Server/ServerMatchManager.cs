@@ -7,6 +7,7 @@ using MySql.Data.MySqlClient;
 using System.Collections;
 using System.Runtime.Remoting.Messaging;
 using UnityEngine;
+using UnityEngineInternal;
 using Random = System.Random;
 
 namespace Wild_Card_Server
@@ -28,6 +29,8 @@ namespace Wild_Card_Server
         {
             p1 = _player1;
             p2 = _player2;
+            p1.Ready = false;
+            p2.Ready = false;
             matchID = _matchID;
 
             p1.matchID = matchID;
@@ -50,11 +53,12 @@ namespace Wild_Card_Server
         {
             ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
             ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
-           // StartMatch();
+           
         }
 
         public void StartMatch()
         {
+            InitializeMatch();
             //Wait while both clients are ready
             while (!p1.Ready || !p2.Ready) { }
             isActive = true;
@@ -66,7 +70,7 @@ namespace Wild_Card_Server
 
         //TODO : REFACTOR IT!!
         public void StartRound()
-        {
+        {   
             while (isActive)
             {
 
@@ -74,13 +78,13 @@ namespace Wild_Card_Server
                 if ((p1.Ready && p2.Ready))
                 {
 
-                  //  SendCards();
-                    TEMP_SendComboCards();
+                    SendCards();
+                    //TEMP_SendComboCards();
 
                     p1.Ready = false;
                     p2.Ready = false;
                     
-                    var timerTime = 5.0f;
+                    var timerTime = 1.0f;
                     ServerTCP.PACKET_StartRound(p1.connectionID,timerTime);
                     ServerTCP.PACKET_StartRound(p2.connectionID, timerTime);
                     var timerStartTime = DateTime.Now;
@@ -95,12 +99,14 @@ namespace Wild_Card_Server
                     isCardChoosing = false;
                     
                     CalculateResults();
+                    p1.Ready = false;
+                    p2.Ready = false;
                     SendResults();
                     p1.SetDefaultValuesForResult();
                     p2.SetDefaultValuesForResult();
 
                 }
-                if (p1.Health<=10000 || p2.Health <= 10000)
+                if (p1.Health<=0 || p2.Health <= 0)
                 {
                     isActive = false;
                 }
@@ -119,17 +125,37 @@ namespace Wild_Card_Server
                 ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
                 ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
             }
+            
         }
 
         private void CalculateResults()
         {
-            foreach (TempPlayer player in new ArrayList{p1,p2})
+            if (!p1.results.amIShot && p2.results.amIShot)
+            {
+                var rand = new Random();
+                var decisionNumber = rand.NextDouble();
+                if (decisionNumber < 0.5)
+                {
+                    p1.results.amIShot = true;
+
+                }
+                else
+                {
+                    p2.results.amIShot = true;
+                }
+            }
+
+            var playerOrderList = p1.results.amIShot ? new ArrayList {p1, p2} : new ArrayList {p2, p1};
+            foreach (TempPlayer player in playerOrderList)
             {
                 TempPlayer other = player.connectionID == p1.connectionID ? p2 : p1;
 
                 List<int> selfDirection = new List<int>();
                 List<int> enemyDirection = new List<int>();
-                foreach (var card in player.cardsForRoundPos.Values)
+
+                //#TODO: Check that this is a godd fix no bugs here
+                var copyCardsForRoundPos = new Dictionary<int,Card>(player.cardsForRoundPos); //copy for avoiding problem with changed dictionary
+                foreach (var card in copyCardsForRoundPos.Values)
                 {
 
                     if (card.Selected)
@@ -149,14 +175,15 @@ namespace Wild_Card_Server
                 CheckCombos(player, selfDirection);
                 CheckCombos(player, enemyDirection);
 
-                
-
-                foreach (var soloCards in player.results.soloCardsPos)
+                //#TODO: Check that this is a godd fix no bugs here
+                var copySoloCards = new List<int>(player.results.soloCardsPos);
+                foreach (var soloCards in copySoloCards)
                 {
 
                     var card = player.cardsForRoundPos[soloCards];
 
                     other.results.enemySelectedCards.Add(card.ID);
+                    other.results.enemySelectedCards.Add(card.Direction);
 
                     if (card.Direction == 0)
                     {
@@ -167,19 +194,23 @@ namespace Wild_Card_Server
                         card.UseCard(other);
                     }
                 }
-
-                foreach (var comboCards in player.results.combos)
+                //#TODO: Check that this is a godd fix no bugs here
+                var copyComboCards = new List<List<int>>(player.results.combos);
+                foreach (var comboCards in copyComboCards)
                 {
+                    Card tempCard = new Card(Constants.Cards[comboCards[0]]);
                     if (comboCards[1] == 0)
                     {
-                        Constants.Cards[comboCards[0]].UseCard(player);
+                        
+                        tempCard.UseCard(player);
                     }
                     else
                     {
-                        Constants.Cards[comboCards[0]].UseCard(other);
+                        tempCard.UseCard(other);
                     }
 
                     other.results.enemySelectedCards.Add(comboCards[0]);
+                    other.results.enemySelectedCards.Add(comboCards[1]);
 
                 }
 
@@ -192,6 +223,8 @@ namespace Wild_Card_Server
             
         }
 
+
+        #region CombosChecking
         private void CheckCombos(TempPlayer player, List<int> cardPos)
         {
             switch (cardPos.Count)
@@ -254,9 +287,9 @@ namespace Wild_Card_Server
                         if (i != j && j != k && i != k)
                         {
                             List<int> temp = new List<int>();
-                            temp.Add(player.cardsForRoundPos[i].ID);
-                            temp.Add(player.cardsForRoundPos[j].ID);
-                            temp.Add(player.cardsForRoundPos[k].ID);
+                            temp.Add(player.cardsForRoundPos[cardPos[i]].ID);
+                            temp.Add(player.cardsForRoundPos[cardPos[j]].ID);
+                            temp.Add(player.cardsForRoundPos[cardPos[k]].ID);
                             temp.Sort();
 
                             if (Constants.Combo3Cards.TryGetValue(temp, out var resultCard))
@@ -264,14 +297,14 @@ namespace Wild_Card_Server
                                 List<int> comboList = new List<int>();
                                 comboList.Add(resultCard.ID);
                                 comboList.Add(player.cardsForRoundPos[cardPos[0]].Direction);
-                                comboList.Add(i);
-                                comboList.Add(j);
-                                comboList.Add(k);
+                                comboList.Add(cardPos[i]);
+                                comboList.Add(cardPos[j]);
+                                comboList.Add(cardPos[k]);
 
                                 player.results.combos.Add(comboList);
 
                                 HashSet<int> full = new HashSet<int>(){0,1,2,3};
-                                HashSet<int> cards3 = new HashSet<int>(){i,j,k};
+                                HashSet<int> cards3 = new HashSet<int>(){ cardPos[i], cardPos[j], cardPos[k] };
 
 
 
@@ -303,8 +336,8 @@ namespace Wild_Card_Server
                     {
 
                         List<int> temp = new List<int>();
-                        temp.Add(player.cardsForRoundPos[i].ID);
-                        temp.Add(player.cardsForRoundPos[j].ID);
+                        temp.Add(player.cardsForRoundPos[cardPos[i]].ID);
+                        temp.Add(player.cardsForRoundPos[cardPos[j]].ID);
                     
                         temp.Sort();
 
@@ -313,15 +346,15 @@ namespace Wild_Card_Server
                             List<int> comboList = new List<int>();
                             comboList.Add(resultCard.ID);
                             comboList.Add(player.cardsForRoundPos[cardPos[0]].Direction);
-                            comboList.Add(i);
-                            comboList.Add(j);
+                            comboList.Add(cardPos[i]);
+                            comboList.Add(cardPos[j]);
                             player.results.combos.Add(comboList);
 
                             // Check another 2 cards if we have it
                             if (cardPos.Count == 4)
                             {
                                 HashSet<int> full = new HashSet<int>() {0, 1, 2, 3};
-                                HashSet<int> cards2 = new HashSet<int>() {i, j};
+                                HashSet<int> cards2 = new HashSet<int>() { cardPos[i], cardPos[j] };
                                 full.ExceptWith(cards2);
                                 int firstPosition = full.Max();
                                 int secondPosition = full.Min();
@@ -349,7 +382,7 @@ namespace Wild_Card_Server
                             else if (cardPos.Count == 3)
                             {
                                 HashSet<int> full = new HashSet<int>(cardPos);
-                                HashSet<int> card2 = new HashSet<int>(){i,j};
+                                HashSet<int> card2 = new HashSet<int>(){ cardPos[i], cardPos[j] };
                                 full.ExceptWith(card2);
                                 player.results.soloCardsPos.Add(full.Min());
                             }
@@ -363,12 +396,7 @@ namespace Wild_Card_Server
             }
 
 
-            //List<int> combo = new List<int>();
-            //combo.Add(4);
-            //combo.Add(player.cardsForRoundPos[cardPos[0]].Direction);
-            //combo.Add(1);
-            //combo.Add(2);
-            //player.results.combos.Add(combo);
+           
             foreach (var cPosition in cardPos)
             {
                 player.results.soloCardsPos.Add(cPosition);
@@ -376,7 +404,7 @@ namespace Wild_Card_Server
 
         }
 
-
+        #endregion
 
 
 
@@ -389,7 +417,7 @@ namespace Wild_Card_Server
             var cardPos = data.ReadInteger();
             var connectionID = data.ReadInteger();
 
-            TempPlayer player = p1.connectionID == connectionID ? p1 : p2;
+            var player = p1.connectionID == connectionID ? p1 : p2;
 
             player.ToggleCardSelection(cardPos);
 
@@ -400,7 +428,7 @@ namespace Wild_Card_Server
         {
             var cards = new ByteBuffer();
             cards.WriteInteger(4);
-            var card = Constants.Cards[1].Clone();
+            var card = new Card(Constants.Cards[1]);
             
             card.Selected = false;
             card.Direction = 1;
@@ -410,7 +438,7 @@ namespace Wild_Card_Server
             p1.cardsForRoundPos[0] = card;
             p2.cardsForRoundPos[0] = card.Clone();
 
-            card = Constants.Cards[1].Clone();
+            card = new Card(Constants.Cards[1]);
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
@@ -419,7 +447,7 @@ namespace Wild_Card_Server
             p1.cardsForRoundPos[1] = card;
             p2.cardsForRoundPos[1] = card.Clone();
 
-            card = Constants.Cards[5].Clone();
+            card = new Card(Constants.Cards[5]);
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
@@ -428,14 +456,14 @@ namespace Wild_Card_Server
             p1.cardsForRoundPos[2] = card;
             p2.cardsForRoundPos[2] = card.Clone();
 
-            card = Constants.Cards[5].Clone();
+            card = new Card(Constants.Cards[5]);
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
             cards.WriteInteger(card.Direction);
             card.Position = 3;
             p1.cardsForRoundPos[3] = card;
-            p2.cardsForRoundPos[3] = card;
+            p2.cardsForRoundPos[3] = card.Clone();
 
 
             ServerTCP.PACKET_SendCards(p1.connectionID, cards);
@@ -454,19 +482,20 @@ namespace Wild_Card_Server
 
             var numberOfCards = 4;
             cards.WriteInteger(numberOfCards);
+
             for (var i = 0; i < numberOfCards; i++)
             {
-                Card card = Constants.Cards.ElementAt(rand.Next(0, Constants.Cards.Count)).Value;
+                var card = new Card(Constants.Cards.ElementAt(rand.Next(0, Constants.Cards.Count)).Value)
+                {
+                    Selected = false, Direction = rand.Next(0, 2), Position = i
+                };
 
-                card.Selected = false;
 
-                card.Direction = rand.Next(0, 2);
-                card.Position = i;
-
+                
                 p1.cardsForRoundPos[i] = card;
                
 
-                p2.cardsForRoundPos[i] = card;
+                p2.cardsForRoundPos[i] = card.Clone();
 
                 cards.WriteInteger(card.ID);
                 cards.WriteInteger(card.Direction);
@@ -516,7 +545,7 @@ namespace Wild_Card_Server
                     buffer.WriteInteger(cardPos);
                 }
 
-
+                Console.WriteLine("Player {0} has {1} HP and {2} armor", player.username, player.results.playerHP, player.results.playerArmor );
                 buffer.WriteInteger(player.results.playerHP);
                 buffer.WriteInteger(player.results.playerArmor);
 
@@ -542,9 +571,9 @@ namespace Wild_Card_Server
             p2 = new TempPlayer(p2.connectionID, p2.username);
             p1.Ready = false;
             p2.Ready = false;
-            ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
-            ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
-            isActive = true;
+            StartMatch();
+            
+           
         }
 
         public void PlayerShot(int connectionID)
