@@ -193,6 +193,7 @@ namespace Wild_Card_Server
                     {
                         card.UseCard(other);
                     }
+                    Console.WriteLine("Card {0} was used by {1}", card.ID, player.username);
                 }
                 //#TODO: Check that this is a godd fix no bugs here
                 var copyComboCards = new List<List<int>>(player.results.combos);
@@ -208,19 +209,26 @@ namespace Wild_Card_Server
                     {
                         tempCard.UseCard(other);
                     }
-
+                    Console.WriteLine("Card {0} was used by {1}", tempCard.ID, player.username);
                     other.results.enemySelectedCards.Add(comboCards[0]);
                     other.results.enemySelectedCards.Add(comboCards[1]);
 
                 }
 
+               
+            }
+
+            foreach (TempPlayer player in playerOrderList)
+            {
+                var other = player.connectionID == p1.connectionID ? p2 : p1;
                 player.results.playerHP = player.Health;
                 player.results.playerArmor = player.Armor;
 
                 other.results.enemyHP = player.Health;
                 other.results.enemyArmor = player.Armor;
             }
-            
+               
+
         }
 
 
