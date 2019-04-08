@@ -130,7 +130,7 @@ namespace Wild_Card_Server
 
         private void CalculateResults()
         {
-            if (!p1.results.amIShot && p2.results.amIShot)
+            if (!p1.results.amIShot && !p2.results.amIShot)
             {
                 var rand = new Random();
                 var decisionNumber = rand.NextDouble();
