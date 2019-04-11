@@ -24,7 +24,7 @@ namespace Wild_Card_Server
 
         public MySqlConnection matchSQLConnection;
 
-
+        private bool restarRequested = false;
         public ServerMatchManager(int _matchID, TempPlayer _player1, TempPlayer _player2)
         {
             p1 = _player1;
@@ -70,8 +70,8 @@ namespace Wild_Card_Server
 
         //TODO : REFACTOR IT!!
         public void StartRound()
-        {   
-            while (isActive)
+        {
+            while (isActive && !restarRequested)
             {
 
                 //Wait while client Catch Cards
@@ -83,13 +83,13 @@ namespace Wild_Card_Server
 
                     p1.Ready = false;
                     p2.Ready = false;
-                    
+
                     var timerTime = 1.0f;
-                    ServerTCP.PACKET_StartRound(p1.connectionID,timerTime);
+                    ServerTCP.PACKET_StartRound(p1.connectionID, timerTime);
                     ServerTCP.PACKET_StartRound(p2.connectionID, timerTime);
                     var timerStartTime = DateTime.Now;
                     while (DateTime.Now.Subtract(timerStartTime).Seconds <= timerTime) { }
-                    
+
                     isCardChoosing = true;
                     ServerTCP.PACKET_Match_ShowCards(p1.connectionID);
                     ServerTCP.PACKET_Match_ShowCards(p2.connectionID);
@@ -97,7 +97,7 @@ namespace Wild_Card_Server
                     while ((!p1.Ready || !p2.Ready) && DateTime.Now.Subtract(roundStartTIme).Seconds <= Constants.LENGTH_OF_ROUND) { }
 
                     isCardChoosing = false;
-                    
+
                     CalculateResults();
                     p1.Ready = false;
                     p2.Ready = false;
@@ -106,26 +106,36 @@ namespace Wild_Card_Server
                     p2.SetDefaultValuesForResult();
 
                 }
-                if (p1.Health<=0 || p2.Health <= 0)
+                if (p1.Health <= 0 || p2.Health <= 0)
                 {
                     isActive = false;
                 }
 
             }
-
-            var winnerUsername = "Draw";
-            if (p1.Health<=0 && p2.Health <= 0)
+            if (restarRequested)
             {
-                ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
-                ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
+                restarRequested = false;
+                RestartMatch();
             }
             else
             {
-                winnerUsername = p1.Health < p2.Health ? p2.username : p1.username;
-                ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
-                ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
+                var winnerUsername = "Draw";
+                if (p1.Health <= 0 && p2.Health <= 0)
+                {
+                    ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
+                    ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
+                }
+                else
+                {
+                    winnerUsername = p1.Health < p2.Health ? p2.username : p1.username;
+                    ServerTCP.PACKET_FinishGame(p1.connectionID, winnerUsername);
+                    ServerTCP.PACKET_FinishGame(p2.connectionID, winnerUsername);
+                }
             }
-            
+            while (!restarRequested) { }
+            restarRequested = false;
+            RestartMatch();
+                        
         }
 
         private void CalculateResults()
@@ -429,7 +439,7 @@ namespace Wild_Card_Server
 
             player.ToggleCardSelection(cardPos);
 
-            ServerTCP.PACKET_ConfirmToggleCard(player.connectionID);
+            ServerTCP.PACKET_ConfirmToggleCard(player.connectionID, cardPos);
         }
 
         private void TEMP_SendComboCards()
@@ -573,15 +583,25 @@ namespace Wild_Card_Server
         }
 
 
-        public void RestartMatch()
+        public void RequestRestart()
         {
+          
+                restarRequested = true;
+            
+          
+            
+            
+           
+        }
+
+        private void RestartMatch()
+        {
+            isActive = false;
             p1 = new TempPlayer(p1.connectionID, p1.username);
             p2 = new TempPlayer(p2.connectionID, p2.username);
             p1.Ready = false;
             p2.Ready = false;
             StartMatch();
-            
-           
         }
 
         public void PlayerShot(int connectionID)

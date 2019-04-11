@@ -177,10 +177,11 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        public static void PACKET_ConfirmToggleCard(int connectionID)
+        public static void PACKET_ConfirmToggleCard(int connectionID, int cardPos)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SConfirmToggleCard);
+            buffer.WriteInteger(cardPos);
             SendDataTo(connectionID, buffer.ToArray());
         }
 

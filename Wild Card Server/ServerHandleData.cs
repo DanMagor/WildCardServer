@@ -221,7 +221,7 @@ namespace Wild_Card_Server
             buffer.WriteBytes(data);
             buffer.ReadInteger(); //read package ID
             int matchID = buffer.ReadInteger();
-            MatchMaker.Matches[matchID].RestartMatch();
+            MatchMaker.Matches[matchID].RequestRestart();
 
 
 
