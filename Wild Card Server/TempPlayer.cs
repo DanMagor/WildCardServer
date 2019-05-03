@@ -124,7 +124,7 @@ namespace Wild_Card_Server
         {
             if (armor <= 0)
             {
-                health -= value;
+                health -= Math.Max(0,health-value);
             }
             else
             {
