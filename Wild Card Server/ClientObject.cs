@@ -50,7 +50,6 @@ namespace Wild_Card_Server
             }
             catch (Exception)
             {
-
                 throw;
             }
         }

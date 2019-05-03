@@ -52,24 +52,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AttackCard.cs" />
-    <Compile Include="Card.cs" />
+    <Compile Include="CardEntity.cs" />
     <Compile Include="ClientObject.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="Database.cs" />
-    <Compile Include="DBInstanceCard.cs" />
-    <Compile Include="Effect.cs" />
-    <Compile Include="HealCard.cs" />
-    <Compile Include="ItemCard.cs" />
+    <Compile Include="DatabaseManager.cs" />
+    <Compile Include="DbInstanceCard.cs" />
     <Compile Include="MatchMaker.cs" />
-    <Compile Include="MySQL.cs" />
+    <Compile Include="MySQLConnector.cs" />
     <Compile Include="Packages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerHandleData.cs" />
-    <Compile Include="ServerMatchManager.cs" />
+    <Compile Include="MatchManager.cs" />
     <Compile Include="ServerTCP.cs" />
-    <Compile Include="TempPlayer.cs" />
+    <Compile Include="PlayerMatchEntity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

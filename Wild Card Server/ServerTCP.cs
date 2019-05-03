@@ -10,13 +10,15 @@ namespace Wild_Card_Server
         private static TcpListener serverSocket;
         public static ClientObject[] clientObjects;
 
+
+
+        #region Initialization
         public static void InitializeServer()
         {
             InitializeMySQLServer();
             InitializeClientObjects();
             InitializeServerSocket();
         }
-
         private static void InitializeServerSocket()
         {
             serverSocket = new TcpListener(IPAddress.Any, 5555);
@@ -25,13 +27,25 @@ namespace Wild_Card_Server
         }
         private static void InitializeMySQLServer()
         {
-            MySQL.mySQLSettings.user = "root";
-            MySQL.mySQLSettings.password = "";
-            MySQL.mySQLSettings.server = "localhost";
-            MySQL.mySQLSettings.database = "Wild Card";
+            MySQLConnector.MySQLSettings.user = "root";
+            MySQLConnector.MySQLSettings.password = "";
+            MySQLConnector.MySQLSettings.server = "localhost";
+            MySQLConnector.MySQLSettings.database = "Wild Card";
 
-            MySQL.ConntectToMySQL();
+            MySQLConnector.ConntectToMySQL();
         }
+        private static void InitializeClientObjects()
+        {
+            clientObjects = new ClientObject[Constants.MAX_PLAYERS];
+
+            for (int i = 0; i < Constants.MAX_PLAYERS; i++)
+            {
+                clientObjects[i] = new ClientObject(null, 0);
+            }
+        }
+        #endregion
+
+
 
         private static void ClientConnectCallback(IAsyncResult result)
         {
@@ -50,7 +64,7 @@ namespace Wild_Card_Server
             }
         }
 
-        public static void SendDataTo(int connectionID, byte[] data)
+        private static void SendDataTo(int connectionID, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((data.GetUpperBound(0) - data.GetLowerBound(0)) + 1);
@@ -60,73 +74,24 @@ namespace Wild_Card_Server
         }
 
 
-        private static void InitializeClientObjects()
-        {
-            clientObjects = new ClientObject[Constants.MAX_PLAYERS];
-
-            for (int i = 0; i < Constants.MAX_PLAYERS; i++)
-            {
-                clientObjects[i] = new ClientObject(null, 0);
-            }
-        }
-
-        
-
-        //TODO: Add some data for Menu Loading Here
-        public static void PACKET_LoadMenu(int connectionID, string username)
-        {
-            ByteBuffer buffer = new ByteBuffer();
-
-            buffer.WriteInteger((int)ServerPackages.SLoadMenu);
-            buffer.WriteString(username);
-            //Add some data here if needed
-            SendDataTo(connectionID, buffer.ToArray());
-
-        }
-
-
-        //TODO: Add all data that needed for match here
-        public static void PACKET_LoadMatch(int connectionID, int matchID)
-        {
-            ByteBuffer buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SLoadMatch);
-
-            //For future actions we need to know MatchID
-            buffer.WriteInteger(matchID);
-
-            //Check Which players we sending data, cause we also want to send Enemy Username in Package
-            //Write Player Username for scene loading
-            buffer.WriteString(MatchMaker.Matches[matchID].p1.connectionID == connectionID
-                ? MatchMaker.Matches[matchID].p1.username
-                : MatchMaker.Matches[matchID].p2.username);
-
-            //Write Enemy Username
-            buffer.WriteString(MatchMaker.Matches[matchID].p1.connectionID == connectionID
-                ? MatchMaker.Matches[matchID].p2.username
-                : MatchMaker.Matches[matchID].p1.username);
-
-
-            SendDataTo(connectionID, buffer.ToArray());
-        }
-
+        #region Data Sending Packets
         public static void PACKET_SendAllCards(int connectionID)
         {
-
             //TODO: Delete Later unneeded fields for client
             var buffer = new ByteBuffer();
-            buffer.WriteInteger((int)ServerPackages.SSendAllCards);
+            buffer.WriteInteger((int)ServerPackages.SSendAllCardsData);
 
             buffer.WriteInteger(Constants.Cards.Count); // Number of cards in dictionary
 
             foreach (var card in Constants.Cards.Values) // Write each card in buffer
             {
-                buffer.WriteInteger(card.ID);
+                buffer.WriteInteger(card.Id);
                 buffer.WriteString(card.Name);
                 buffer.WriteString(card.Type);
                 buffer.WriteBool(card.IsComboCard);
                 buffer.WriteInteger(card.NForCombo);
-                for (var i=0;  i<card.NForCombo; i++)
-                { 
+                for (var i = 0; i < card.NForCombo; i++)
+                {
                     buffer.WriteInteger(card.ComboCards[i]);
                 }
                 buffer.WriteString(card.CardImage);
@@ -137,13 +102,50 @@ namespace Wild_Card_Server
 
 
             }
-            
+
 
             SendDataTo(connectionID, buffer.ToArray()); //sending data to client
 
         }
+        #endregion
 
-        public static void PACKET_SendCards(int connectionID, ByteBuffer cards)
+        #region SceneLoading Packets
+        public static void PACKET_LoadMenu(int connectionID, string username)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+
+            buffer.WriteInteger((int)ServerPackages.SLoadMenu);
+            buffer.WriteString(username);
+            //Add some data here if needed
+
+            SendDataTo(connectionID, buffer.ToArray());
+        }   
+        public static void PACKET_LoadMatch(int connectionID, int matchID)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteInteger((int)ServerPackages.SLoadMatch);
+
+            //For future actions we need to know MatchID
+            buffer.WriteInteger(matchID);
+
+            //Check Which players we sending data, cause we also want to send Enemy Username in Package
+            //Write Player Username for scene loading
+            buffer.WriteString(MatchMaker.Matches[matchID].Player1.ConnectionId == connectionID
+                ? MatchMaker.Matches[matchID].Player1.Username
+                : MatchMaker.Matches[matchID].Player2.Username);
+
+            //Write Enemy Username
+            buffer.WriteString(MatchMaker.Matches[matchID].Player1.ConnectionId == connectionID
+                ? MatchMaker.Matches[matchID].Player2.Username
+                : MatchMaker.Matches[matchID].Player1.Username);
+
+
+            SendDataTo(connectionID, buffer.ToArray());
+        }
+        #endregion
+
+        #region Match Packets
+        public static void PACKET_Match_SendCards(int connectionID, ByteBuffer cards)
         {
             var buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SSendMatchCards);
@@ -152,7 +154,7 @@ namespace Wild_Card_Server
 
         }
 
-        public static void PACKET_StartRound(int connectionID, float timerTime)
+        public static void PACKET_Match_StartRound(int connectionID, float timerTime)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SStartRound);
@@ -167,7 +169,7 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        public static void PACKET_ShowResult(int connectionID, byte[] data)
+        public static void PACKET_Match_ShowResult(int connectionID, byte[] data)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SShowResult);
@@ -177,7 +179,7 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-        public static void PACKET_ConfirmToggleCard(int connectionID, int cardPos)
+        public static void PACKET_Match_ConfirmToggleCard(int connectionID, int cardPos)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SConfirmToggleCard);
@@ -185,8 +187,7 @@ namespace Wild_Card_Server
             SendDataTo(connectionID, buffer.ToArray());
         }
 
-
-        public static void PACKET_FinishGame(int connectionID, string winnerUsername)
+        public static void PACKET_Match_FinishGame(int connectionID, string winnerUsername)
         {
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((int)ServerPackages.SFinishGame);
@@ -194,7 +195,7 @@ namespace Wild_Card_Server
 
             SendDataTo(connectionID, buffer.ToArray());
         }
-
+        #endregion
 
 
 

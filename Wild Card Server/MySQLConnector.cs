@@ -4,22 +4,22 @@ using MySql.Data.MySqlClient;
 
 namespace Wild_Card_Server
 {
-    public class MySQL
+    public class MySQLConnector
     {
-        public static MySQLSettings mySQLSettings;
+        public static MySQLSettings MySQLSettings;
 
         public static void ConntectToMySQL()
         {
-            mySQLSettings.connection = new MySqlConnection(CreateConnectionString());
+            MySQLSettings.connection = new MySqlConnection(CreateConnectionString());
             ConnectToMySQLServer();
         }
 
-        public static void ConnectToMySQLServer()
+        private static void ConnectToMySQLServer()
         {
             try
             {
-                mySQLSettings.connection.Open();
-                Console.WriteLine("Succesfully connected to MySQL Server '{0}'",mySQLSettings.database);
+                MySQLSettings.connection.Open();
+                Console.WriteLine("Succesfully connected to MySQL Server '{0}'",MySQLSettings.database);
             }
             catch (Exception ex)
             {
@@ -29,12 +29,12 @@ namespace Wild_Card_Server
         }
         public static void CloseConnection()
         {
-            mySQLSettings.connection.Close();
+            MySQLSettings.connection.Close();
         }
 
         public static string CreateConnectionString()
         {
-            var db = mySQLSettings;
+            var db = MySQLSettings;
             string connectionString = "SERVER=" + db.server + ";" +
                 "DATABASE=" + db.database + ";" +
                 "UID=" + db.user + ";" +

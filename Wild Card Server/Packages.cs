@@ -4,7 +4,7 @@
     SAlertMsg,
     SLoadMenu,
     SLoadMatch,
-    SSendAllCards,
+    SSendAllCardsData,
     SSendMatchCards,
     SStartRound,
     SShowCards,
@@ -19,8 +19,7 @@ public enum ClientPackages
     CLogin = 1,
     CShot,
     CSearchOpponent,
-    CReadyForMatch,
-    CReadyForRound,
+    CSetReady,
     CSendToggleCard,
 
     CRestartMatch,

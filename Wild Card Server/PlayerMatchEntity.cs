@@ -8,28 +8,28 @@ using System.Threading.Tasks;
 
 namespace Wild_Card_Server
 {
-    class TempPlayer
+    class PlayerMatchEntity
     {
-        public Dictionary<int,Card> cardsForRoundPos; //Position to card
+        public Dictionary<int,CardEntity> cardsForRoundPos; //Position to card
        
         
-        public int connectionID;
-        public int matchID;
-        public string username;
+        public int ConnectionId;
+        public int MatchID;
+        public string Username;
 
 
-        public List<Card> cardDeck;
-        public int nAttackCardsInDeck;
-        public int nHealCardsInDeck;
-        public int nArmorCardsInDeck;
+        public List<CardEntity> CardDeck;
+        public int Num_AttackCardsInDeck;
+        public int Num_HealCardsInDeck;
+        public int Num_ArmorCardsInDeck;
 
-        public RoundResults results;
+        public RoundResults Results;
 
 
 
-        public const int maxHealth = 100;
-        private int health;
-        private int armor;
+        private const int maxHealth = 100;
+        public int health;
+        public int armor;
        
 
         public struct RoundResults
@@ -53,57 +53,34 @@ namespace Wild_Card_Server
 
   
   
-        private bool ready = false;
+        public bool isReady = false;
 
-        public bool Ready
-        {
-            get { return ready; }
-            set { ready = value; }
-        }
-
-        public int Health
-        {
-            get { return health; }
-            set { health = value; }
-        }
-
-        public int Armor
-        {
-            get { return armor; }
-            set { armor = value; }
-        }
+      
 
        
 
-        public TempPlayer(int _connectionID, string _username, int HP = 100)
+        public PlayerMatchEntity(int _connectionID, string _username, int HP = 100)
         {
-            connectionID = _connectionID;
-            username = _username;
+            ConnectionId = _connectionID;
+            Username = _username;
             health = HP;
-            cardsForRoundPos = new Dictionary<int, Card>();
-            results = new RoundResults
+            cardsForRoundPos = new Dictionary<int, CardEntity>();
+            Results = new RoundResults
             {
                 soloCardsPos = new List<int>(),
                 combos = new List<List<int>>(),
                 enemySelectedCards = new List<int>()
             };
-            nAttackCardsInDeck = 0;
-            nHealCardsInDeck = 0;
-            nArmorCardsInDeck = 0;
+            Num_AttackCardsInDeck = 0;
+            Num_HealCardsInDeck = 0;
+            Num_ArmorCardsInDeck = 0;
             SetDefaultValuesForResult();
 
         }
 
 
 
-        public void MakeShots(TempPlayer p2)
-        {
-           
-        }
-        public void UpdateStats()
-        {
-
-        }
+        
 
         public void ToggleCardSelection(int cardPos)
         {
@@ -119,24 +96,21 @@ namespace Wild_Card_Server
         }
 
 
-
         public void GetDamage(int value)
         {
             if (armor <= 0)
             {
-                health -= Math.Max(0,health-value);
+                health = Math.Max(0,health-value);
             }
             else
             {
                 armor = Math.Max(0, armor - value);
             }
         }
-
         public void GetHeal(int value)
         {
             health = Math.Min(maxHealth, health + value);
         }
-
         public void GetArmor(int value)
         {
             armor += value;
@@ -145,11 +119,13 @@ namespace Wild_Card_Server
         public void SetDefaultValuesForResult()
         {
             cardsForRoundPos.Clear();
-            results = new RoundResults();
-            results.soloCardsPos = new List<int>();
-            results.combos = new List<List<int>>();
-            results.enemySelectedCards = new List<int>();
-            
+            Results = new RoundResults
+            {
+                soloCardsPos = new List<int>(),
+                combos = new List<List<int>>(),
+                enemySelectedCards = new List<int>()
+            };
+
         }
 
 

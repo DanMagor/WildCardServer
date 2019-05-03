@@ -13,12 +13,16 @@ namespace Wild_Card_Server
         public static int MAX_PLAYERS = 256;
         public static int MAX_MATCHES = 256;
         public static float LENGTH_OF_ROUND = 3.0f;
+        public static float LENGTH_OF_BEFORE_ROUND_TIMER = 1.0f;
 
-        public static Dictionary<int, DBInstanceCard> Cards = Database.GetAllCards();
-        public static Dictionary<List<int>, DBInstanceCard> Combo4Cards = Database.GetCombo4Cards();
-        public static Dictionary<List<int>, DBInstanceCard> Combo3Cards = Database.GetCombo3Cards();
-        public static Dictionary<List<int>, DBInstanceCard> Combo2Cards = Database.GetCombo2Cards();
 
+        public static Dictionary<int, DbInstanceCard> Cards = DatabaseManager.GetAllCards();
+        public static Dictionary<List<int>, DbInstanceCard> Combo4Cards = DatabaseManager.GetCombo4Cards();
+        public static Dictionary<List<int>, DbInstanceCard> Combo3Cards = DatabaseManager.GetCombo3Cards();
+        public static Dictionary<List<int>, DbInstanceCard> Combo2Cards = DatabaseManager.GetCombo2Cards();
+
+
+        //Need for Combo Detection 
         public class ListComparer<T> : IEqualityComparer<List<T>>
         {
             public bool Equals(List<T> x, List<T> y)

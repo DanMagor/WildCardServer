@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Wild_Card_Server
 {
-    class DBInstanceCard
+    class DbInstanceCard
     {
-        public int ID; // ID in database
+        public int Id; // ID in database
         public string Type;
         public string Name;
         public bool IsComboCard; // is it possible to get this card by combo

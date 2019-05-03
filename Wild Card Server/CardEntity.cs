@@ -9,7 +9,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace Wild_Card_Server
 {
-    class Card
+    class CardEntity
     {
         public int ID; // ID in database
         public int Position;
@@ -26,14 +26,12 @@ namespace Wild_Card_Server
         public int Direction; //0-self, 1 - enemy
 
 
-        private Card()
-        {
+        //Constructor with default values
+        public CardEntity(){}
 
-        }
-
-        public Card(DBInstanceCard dbCard)
+        public CardEntity(DbInstanceCard dbCard)
         {
-            ID = dbCard.ID;
+            ID = dbCard.Id;
             Type = dbCard.Type;
             Name = dbCard.Name;
             IsComboCard = dbCard.IsComboCard;
@@ -43,10 +41,9 @@ namespace Wild_Card_Server
             ItemImage = dbCard.ItemImage;
             Value = dbCard.Value;
             Animation = dbCard.Animation;
-
         }
 
-        public void UseCard(TempPlayer player)
+        public void UseCard(PlayerMatchEntity player)
         {
             switch (Type)
             {
@@ -69,9 +66,9 @@ namespace Wild_Card_Server
             }
         }
 
-        public Card Clone()
+        public CardEntity Clone()
         {
-            var clone = new Card()
+            var clone = new CardEntity()
             {
                 ID = this.ID,
                 Position = this.Position,

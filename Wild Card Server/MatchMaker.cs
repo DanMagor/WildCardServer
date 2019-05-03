@@ -9,64 +9,37 @@ namespace Wild_Card_Server
 {
     class MatchMaker
     {
-        private static List<TempPlayer> players = new List<TempPlayer>();
+        private static List<PlayerMatchEntity> playerInSearch = new List<PlayerMatchEntity>();
         private static bool isSearching = false;
         private static Thread searchingThread;
 
 
-        private static int matchID = 0;
+        private static int newMatchID = 0; //Fix Multi Threading issues here 
 
-        public static Dictionary<int, ServerMatchManager> Matches = new Dictionary<int, ServerMatchManager>();
+        public static Dictionary<int, MatchManager> Matches = new Dictionary<int, MatchManager>();
 
 
-
+        //Fix Multi Threading issues here
         public static void AddPlayerToSearch(int connectionID, string username)
         {
 
-            players.Add(new TempPlayer(connectionID, username));
-            if (players.Count == 2)
+            playerInSearch.Add(new PlayerMatchEntity(connectionID, username));
+            if (playerInSearch.Count == 2)
             {
-                TempPlayer player1 = players[0];
-                players.RemoveAt(0);
-                TempPlayer player2 = players[0];
-                players.RemoveAt(0);
-                Matches[matchID] = new ServerMatchManager(matchID, player1, player2);
-                var matchThread = new Thread(Matches[matchID].StartMatch) { Name = "Match " + matchID.ToString() };
+                PlayerMatchEntity player1 = playerInSearch[0];
+                playerInSearch.RemoveAt(0);
+                PlayerMatchEntity player2 = playerInSearch[0];
+                playerInSearch.RemoveAt(0);
+                Matches[newMatchID] = new MatchManager(newMatchID, player1, player2);
+                var matchThread = new Thread(Matches[newMatchID].StartMatch) { Name = "Match " + newMatchID.ToString() };
                 matchThread.Start();
 
-
-
-                matchID++;
+                newMatchID++;
 
             }
-            //if (!isSearching)
-            //{
-            //    isSearching = true;
-            //    searchingThread = new Thread(SearchingLoop) {Name = "SearchingThread"}; //Simplified Initialization
-            //    searchingThread.Start();
-
-            //}
 
         }
-        public static void SearchingLoop()
-        {
-            while (players.Count != 0)
-            {
-                if (players.Count >= 2)
-                {
-                    TempPlayer player1 = players[0];
-                    players.RemoveAt(0);
-                    TempPlayer player2 = players[0];
-                    players.RemoveAt(0);
-                    Matches[matchID] = new ServerMatchManager(matchID, player1, player2);
-                    Matches[matchID].InitializeMatch();
-
-                    matchID++;
-
-                }
-            }
-            isSearching = false;
-        }
+        
 
        
 
