@@ -16,7 +16,15 @@ namespace Wild_Card_Server
         public int connectionID;
         public int matchID;
         public string username;
+
+
+        public List<Card> cardDeck;
+        public int nAttackCardsInDeck;
+        public int nHealCardsInDeck;
+        public int nArmorCardsInDeck;
+
         public RoundResults results;
+
 
 
         public const int maxHealth = 100;
@@ -79,7 +87,9 @@ namespace Wild_Card_Server
                 combos = new List<List<int>>(),
                 enemySelectedCards = new List<int>()
             };
-
+            nAttackCardsInDeck = 0;
+            nHealCardsInDeck = 0;
+            nArmorCardsInDeck = 0;
             SetDefaultValuesForResult();
 
         }

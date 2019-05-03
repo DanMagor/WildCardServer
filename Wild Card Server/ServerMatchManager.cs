@@ -53,7 +53,7 @@ namespace Wild_Card_Server
         {
             ServerTCP.PACKET_LoadMatch(p1.connectionID, matchID);
             ServerTCP.PACKET_LoadMatch(p2.connectionID, matchID);
-           
+
         }
 
         public void StartMatch()
@@ -62,7 +62,9 @@ namespace Wild_Card_Server
             //Wait while both clients are ready
             while (!p1.Ready || !p2.Ready) { }
             isActive = true;
-          //  SendResults();
+            FormDecks(); //form classic decks for players;
+                         // FormTestDecks();
+                         //  SendResults();
             StartRound();
         }
 
@@ -135,7 +137,7 @@ namespace Wild_Card_Server
             while (!restarRequested) { }
             restarRequested = false;
             RestartMatch();
-                        
+
         }
 
         private void CalculateResults()
@@ -155,7 +157,7 @@ namespace Wild_Card_Server
                 }
             }
 
-            var playerOrderList = p1.results.amIShot ? new ArrayList {p1, p2} : new ArrayList {p2, p1};
+            var playerOrderList = p1.results.amIShot ? new ArrayList { p1, p2 } : new ArrayList { p2, p1 };
             foreach (TempPlayer player in playerOrderList)
             {
                 TempPlayer other = player.connectionID == p1.connectionID ? p2 : p1;
@@ -164,12 +166,13 @@ namespace Wild_Card_Server
                 List<int> enemyDirection = new List<int>();
 
                 //#TODO: Check that this is a godd fix no bugs here
-                var copyCardsForRoundPos = new Dictionary<int,Card>(player.cardsForRoundPos); //copy for avoiding problem with changed dictionary
+                var copyCardsForRoundPos = new Dictionary<int, Card>(player.cardsForRoundPos); //copy for avoiding problem with changed dictionary
                 foreach (var card in copyCardsForRoundPos.Values)
                 {
 
                     if (card.Selected)
                     {
+
                         if (card.Direction == 0)
                         {
                             selfDirection.Add(card.Position);
@@ -179,8 +182,30 @@ namespace Wild_Card_Server
                             enemyDirection.Add(card.Position);
                         }
                     }
+                    else
+                    {
+
+                        Card temp = card.Clone();
+                        temp.Direction = card.Direction == 0 ? 1 : 0;
+                        player.cardDeck.Add(temp);
+                        switch (temp.Type)
+                        {
+                            case "Attack":
+                                player.nAttackCardsInDeck++;
+                                break;
+                            case "Heal":
+                                player.nHealCardsInDeck++;
+                                break;
+                            case "Armor":
+                                player.nArmorCardsInDeck++;
+                                break;
+                            default:
+                                throw new Exception("Wrong type of card in Calculate Result");
+                        }
+
+                    }
                 }
-                
+
 
                 CheckCombos(player, selfDirection);
                 CheckCombos(player, enemyDirection);
@@ -212,7 +237,7 @@ namespace Wild_Card_Server
                     Card tempCard = new Card(Constants.Cards[comboCards[0]]);
                     if (comboCards[1] == 0)
                     {
-                        
+
                         tempCard.UseCard(player);
                     }
                     else
@@ -223,9 +248,29 @@ namespace Wild_Card_Server
                     other.results.enemySelectedCards.Add(comboCards[0]);
                     other.results.enemySelectedCards.Add(comboCards[1]);
 
+                    tempCard.Direction = 0;
+                    player.cardDeck.Add(tempCard.Clone());
+
+                    tempCard.Direction = 1;
+                    player.cardDeck.Add(tempCard.Clone());
+
+                    switch (tempCard.Type)
+                    {
+                        case "Attack":
+                            player.nAttackCardsInDeck += 2;
+                            break;
+                        case "Heal":
+                            player.nHealCardsInDeck += 2;
+                            break;
+                        case "Armor":
+                            player.nArmorCardsInDeck += 2;
+                            break;
+                        default:
+                            throw new Exception("Wrong type of card in Calculate Result");
+                    }
                 }
 
-               
+
             }
 
             foreach (TempPlayer player in playerOrderList)
@@ -237,7 +282,7 @@ namespace Wild_Card_Server
                 other.results.enemyHP = player.Health;
                 other.results.enemyArmor = player.Armor;
             }
-               
+
 
         }
 
@@ -248,7 +293,7 @@ namespace Wild_Card_Server
             switch (cardPos.Count)
             {
                 case 4:
-                    Check4CardCombo(player, cardPos ,4);
+                    Check4CardCombo(player, cardPos, 4);
                     break;
                 case 3:
                     Check3CardsCombo(player, cardPos, 3);
@@ -262,7 +307,7 @@ namespace Wild_Card_Server
                 case 0:
                     break;
             }
-           
+
         }
 
         private void Check4CardCombo(TempPlayer player, List<int> cardPos, int n)
@@ -270,7 +315,7 @@ namespace Wild_Card_Server
             List<int> temp = new List<int>();
             foreach (var card in cardPos)
             {
-               temp.Add(player.cardsForRoundPos[card].ID);
+                temp.Add(player.cardsForRoundPos[card].ID);
             }
 
             temp.Sort();
@@ -284,14 +329,15 @@ namespace Wild_Card_Server
                 {
                     comboList.Add(card);
                 }
+                player.results.combos.Add(comboList);
 
             }
             else
             {
                 Check3CardsCombo(player, cardPos, n);
             }
-            
-            
+
+
         }
 
         private void Check3CardsCombo(TempPlayer player, List<int> cardPos, int n)
@@ -321,15 +367,18 @@ namespace Wild_Card_Server
 
                                 player.results.combos.Add(comboList);
 
-                                HashSet<int> full = new HashSet<int>(){0,1,2,3};
-                                HashSet<int> cards3 = new HashSet<int>(){ cardPos[i], cardPos[j], cardPos[k] };
+                                if (n == 4)
+                                {
+                                    HashSet<int> full = new HashSet<int>() { 0, 1, 2, 3 };
+                                    HashSet<int> cards3 = new HashSet<int>() { cardPos[i], cardPos[j], cardPos[k] };
 
 
 
-                                full.ExceptWith(cards3);
-                                
-                                player.results.soloCardsPos.Add(full.Max());
-                                
+                                    full.ExceptWith(cards3);
+
+                                    player.results.soloCardsPos.Add(full.Max());
+                                }
+
                                 return;
 
                             }
@@ -356,7 +405,7 @@ namespace Wild_Card_Server
                         List<int> temp = new List<int>();
                         temp.Add(player.cardsForRoundPos[cardPos[i]].ID);
                         temp.Add(player.cardsForRoundPos[cardPos[j]].ID);
-                    
+
                         temp.Sort();
 
                         if (Constants.Combo2Cards.TryGetValue(temp, out var resultCard))
@@ -371,7 +420,7 @@ namespace Wild_Card_Server
                             // Check another 2 cards if we have it
                             if (cardPos.Count == 4)
                             {
-                                HashSet<int> full = new HashSet<int>() {0, 1, 2, 3};
+                                HashSet<int> full = new HashSet<int>() { 0, 1, 2, 3 };
                                 HashSet<int> cards2 = new HashSet<int>() { cardPos[i], cardPos[j] };
                                 full.ExceptWith(cards2);
                                 int firstPosition = full.Max();
@@ -400,7 +449,7 @@ namespace Wild_Card_Server
                             else if (cardPos.Count == 3)
                             {
                                 HashSet<int> full = new HashSet<int>(cardPos);
-                                HashSet<int> card2 = new HashSet<int>(){ cardPos[i], cardPos[j] };
+                                HashSet<int> card2 = new HashSet<int>() { cardPos[i], cardPos[j] };
                                 full.ExceptWith(card2);
                                 player.results.soloCardsPos.Add(full.Min());
                             }
@@ -414,7 +463,7 @@ namespace Wild_Card_Server
             }
 
 
-           
+
             foreach (var cPosition in cardPos)
             {
                 player.results.soloCardsPos.Add(cPosition);
@@ -447,7 +496,7 @@ namespace Wild_Card_Server
             var cards = new ByteBuffer();
             cards.WriteInteger(4);
             var card = new Card(Constants.Cards[1]);
-            
+
             card.Selected = false;
             card.Direction = 1;
             cards.WriteInteger(card.ID);
@@ -491,43 +540,62 @@ namespace Wild_Card_Server
         private void SendCards()
         {
 
-            
-            //TODO: Add logic for Deck and managing probabilities
-
-            var cards = new ByteBuffer();
-
             var rand = new Random();
-
-            var numberOfCards = 4;
-            cards.WriteInteger(numberOfCards);
-
-            for (var i = 0; i < numberOfCards; i++)
+            foreach (var player in new List<TempPlayer> { p1, p2 })
             {
-                var card = new Card(Constants.Cards.ElementAt(rand.Next(0, Constants.Cards.Count)).Value)
+
+                if (player.cardDeck.Count == 0)
                 {
-                    Selected = false, Direction = rand.Next(0, 2), Position = i
-                };
+                    throw new Exception("Card Deck for " + player.username + " is empty");
+                }
 
+                var cards = new ByteBuffer();
+                var numberOfCards = Math.Min(4, player.cardDeck.Count);
+                cards.WriteInteger(numberOfCards);
 
-                
-                p1.cardsForRoundPos[i] = card;
-               
+                for (var i = 0; i < numberOfCards; i++)
+                {
+                    int randIndex = rand.Next(0, player.cardDeck.Count);
+                    var card = player.cardDeck.ElementAt(randIndex);
+                    card.Selected = false;
+                    card.Position = i;
+                    player.cardsForRoundPos[i] = card;
 
-                p2.cardsForRoundPos[i] = card.Clone();
+                    player.cardDeck.RemoveAt(randIndex);
 
-                cards.WriteInteger(card.ID);
-                cards.WriteInteger(card.Direction);
+                    switch (card.Type)
+                    {
+                        case "Attack":
+                            player.nAttackCardsInDeck--;
+                            break;
+                        case "Heal":
+                            player.nHealCardsInDeck--;
+                            break;
+                        case "Armor":
+                            player.nArmorCardsInDeck--;
+                            break;
+                        default:
+                            throw new Exception("Wrong type of card in SendCards");
+                    }
 
-                
+                    cards.WriteInteger(card.ID);
+                    cards.WriteInteger(card.Direction);
+                    Console.WriteLine();
+                    Console.WriteLine(card.Direction);
+                    Console.WriteLine();
+
+                }
+                cards.WriteInteger(player.nAttackCardsInDeck);
+                cards.WriteInteger(player.nHealCardsInDeck);
+                cards.WriteInteger(player.nArmorCardsInDeck);
+                ServerTCP.PACKET_SendCards(player.connectionID, cards);
+
             }
-            
-            ServerTCP.PACKET_SendCards(p1.connectionID, cards);
-            ServerTCP.PACKET_SendCards(p2.connectionID, cards);
-
         }
+
         private void SendResults()
         {
-            foreach (var player in new List<TempPlayer>(){p1,p2})
+            foreach (var player in new List<TempPlayer>() { p1, p2 })
             {
                 var buffer = new ByteBuffer();
 
@@ -563,7 +631,7 @@ namespace Wild_Card_Server
                     buffer.WriteInteger(cardPos);
                 }
 
-                Console.WriteLine("Player {0} has {1} HP and {2} armor", player.username, player.results.playerHP, player.results.playerArmor );
+                Console.WriteLine("Player {0} has {1} HP and {2} armor", player.username, player.results.playerHP, player.results.playerArmor);
                 buffer.WriteInteger(player.results.playerHP);
                 buffer.WriteInteger(player.results.playerArmor);
 
@@ -575,23 +643,23 @@ namespace Wild_Card_Server
                 buffer.WriteInteger(player.results.enemyHP);
                 buffer.WriteInteger(player.results.enemyArmor);
 
+
+                buffer.WriteInteger(player.nAttackCardsInDeck);
+                buffer.WriteInteger(player.nHealCardsInDeck);
+                buffer.WriteInteger(player.nArmorCardsInDeck);
                 ////Sending:
                 ServerTCP.PACKET_ShowResult(player.connectionID, buffer.ToArray());
             }
-            
-            
+
+
         }
 
 
         public void RequestRestart()
         {
-          
-                restarRequested = true;
-            
-          
-            
-            
-           
+
+            restarRequested = true;
+
         }
 
         private void RestartMatch()
@@ -619,6 +687,126 @@ namespace Wild_Card_Server
 
 
         }
+
+        private void FormDecks()
+        {
+            foreach (var player in new List<TempPlayer> { p1, p2 })
+            {
+                player.cardDeck = new List<Card>();
+
+                List<int> attackCardsIndexes = new List<int> { 1, 1, 5 };
+                List<int> healCardsIndexes = new List<int> { 13, 14, 15 };
+                List<int> armorCardsIndexes = new List<int> { 24, 25, 26 };
+
+                for (int i = 0; i < 4; i++)
+                {
+                    foreach (var index in attackCardsIndexes)
+                    {
+                        var card = new Card(Constants.Cards[index]);
+
+
+                        card.Direction = 0;
+                        player.cardDeck.Add(card);
+                        player.nAttackCardsInDeck++;
+
+
+                        card = card.Clone();
+                        card.Direction = 1;
+                        player.cardDeck.Add(card);
+                        player.nAttackCardsInDeck++;
+                    }
+                }
+                for (int i = 0; i < 2; i++)
+                {
+                    foreach (var index in healCardsIndexes)
+                    {
+                        var card = new Card(Constants.Cards[index]);
+                        card.Direction = 0;
+                        player.cardDeck.Add(card);
+                        player.nHealCardsInDeck++;
+
+                        card = card.Clone();
+                        card.Direction = 1;
+                        player.cardDeck.Add(card);
+                        player.nHealCardsInDeck++;
+                    }
+                }
+
+                for (int i = 0; i < 2; i++)
+                {
+                    foreach (var index in armorCardsIndexes)
+                    {
+                        var card = new Card(Constants.Cards[index]);
+                        card.Direction = 0;
+                        player.cardDeck.Add(card);
+                        player.nArmorCardsInDeck++;
+
+                        card = card.Clone();
+                        card.Direction = 1;
+                        player.cardDeck.Add(card);
+                        player.nArmorCardsInDeck++;
+                    }
+                }
+            }
+        }
+
+        private void FormTestDecks()
+        {
+            foreach (var player in new List<TempPlayer> { p1, p2 })
+            {
+                player.cardDeck = new List<Card>();
+
+                List<int> attackCardsIndexes = new List<int> { 1, 1, 1 };
+                //List<int> healCardsIndexes = new List<int> { 13, 14, 15 };
+                //List<int> armorCardsIndexes = new List<int> { 24, 25, 26 };
+
+                for (int i = 0; i < 4; i++)
+                {
+                    foreach (var index in attackCardsIndexes)
+                    {
+                        var card = new Card(Constants.Cards[index]);
+
+                        //if (i % 2 == 0)
+                        //{
+                        //    card.Direction = 0;
+                        //    player.cardDeck.Add(card);
+                        //}
+
+                        //card = card.Clone();
+                        card.Direction = 0;
+                        player.cardDeck.Add(card);
+                    }
+                }
+                //for (int i = 0; i < 2; i++)
+                //{
+                //    foreach (var index in healCardsIndexes)
+                //    {
+                //        var card = new Card(Constants.Cards[index]);
+                //        card.Direction = 0;
+                //        player.cardDeck.Add(card);
+
+                //        card = card.Clone();
+                //        card.Direction = 1;
+                //        player.cardDeck.Add(card);
+                //    }
+                //}
+
+                //for (int i = 0; i < 2; i++)
+                //{
+                //    foreach (var index in armorCardsIndexes)
+                //    {
+                //        var card = new Card(Constants.Cards[index]);
+                //        card.Direction = 0;
+                //        player.cardDeck.Add(card);
+
+                //        card = card.Clone();
+                //        card.Direction = 1;
+                //        player.cardDeck.Add(card);
+                //    }
+                //}
+            }
+        }
+
 
     }
 }
