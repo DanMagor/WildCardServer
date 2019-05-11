@@ -10,9 +10,7 @@ namespace Wild_Card_Server
     class MatchMaker
     {
         private static List<PlayerMatchEntity> playerInSearch = new List<PlayerMatchEntity>();
-        private static bool isSearching = false;
-        private static Thread searchingThread;
-
+      
 
         private static int newMatchID = 0; //Fix Multi Threading issues here 
 
