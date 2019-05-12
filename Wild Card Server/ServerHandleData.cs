@@ -20,6 +20,7 @@ namespace Wild_Card_Server
             packetListener.Add((int)ClientPackages.CSendToggleCard, Handle_Match_ToggleCard);
             packetListener.Add((int)ClientPackages.CRestartMatch, Handle_Match_RestartMatch);
             packetListener.Add((int)ClientPackages.CShot, Handle_Match_Shot);
+            packetListener.Add((int)ClientPackages.CLeaveMatch, Handle_Match_LeaveMatch);
 
         }
 
@@ -192,6 +193,14 @@ namespace Wild_Card_Server
 
             MatchMaker.Matches[matchID].PlayerShot(connectionID);
 
+        }
+        private static void Handle_Match_LeaveMatch(int connectionID, byte[] data)
+        {
+            ByteBuffer buffer = new ByteBuffer();
+            buffer.WriteBytes(data);
+            buffer.ReadInteger(); //Read package ID
+            var matchId = buffer.ReadInteger();
+            MatchMaker.Matches[matchId].RequestLeaveMatch(connectionID);
         }
         #endregion
     }

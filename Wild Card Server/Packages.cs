@@ -21,7 +21,7 @@ public enum ClientPackages
     CSearchOpponent,
     CSetReady,
     CSendToggleCard,
-
+    CLeaveMatch,
     CRestartMatch,
 }
 

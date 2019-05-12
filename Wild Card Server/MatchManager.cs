@@ -80,6 +80,7 @@ namespace Wild_Card_Server
                 var winner = Player1.ConnectionId == e.ErrorCode ? Player2 : Player1;
                 ServerTCP.PACKET_Match_FinishGame(winner.ConnectionId, winner.Username);
             }
+            Console.WriteLine("Match {0} is Finished", MatchId);
         }
         public void ToggleCardSelection(ByteBuffer data)
         {
@@ -99,6 +100,13 @@ namespace Wild_Card_Server
 
             restarRequested = true;
 
+        }
+        public void RequestLeaveMatch(int leaverConnectionId)
+        {
+            isActive = false;
+            var winner = Player1.ConnectionId == leaverConnectionId ? Player2 : Player1;
+            var leaver = Player1.ConnectionId == leaverConnectionId ? Player1 : Player2;
+            leaver.health = 0;
         }
         public void PlayerShot(int connectionID)
         {
@@ -194,10 +202,10 @@ namespace Wild_Card_Server
                 }
             }
 
-            //In case if match is finished, wait for restart request
-            while (!restarRequested) { }
-            restarRequested = false;
-            RestartMatch();
+            ////In case if match is finished, wait for restart request
+            //while (!restarRequested) { }
+            //restarRequested = false;
+            //RestartMatch();
 
         }
         private void CalculateResults()
@@ -288,7 +296,7 @@ namespace Wild_Card_Server
                     {
                         card.UseCard(other);
                     }
-                    Console.WriteLine("Card {0} was used by {1}", card.ID, player.Username);
+                    
                 }
                 //#TODO: Check that this is a godd fix no bugs here
                 var copyComboCards = new List<List<int>>(player.Results.combos);
@@ -304,7 +312,7 @@ namespace Wild_Card_Server
                     {
                         tempCard.UseCard(other);
                     }
-                    Console.WriteLine("Card {0} was used by {1}", tempCard.ID, player.Username);
+                   
                     other.Results.enemySelectedCards.Add(comboCards[0]);
                     other.Results.enemySelectedCards.Add(comboCards[1]);
 
@@ -576,9 +584,6 @@ namespace Wild_Card_Server
 
                     cards.WriteInteger(card.ID);
                     cards.WriteInteger(card.Direction);
-                    Console.WriteLine();
-                    Console.WriteLine(card.Direction);
-                    Console.WriteLine();
 
                 }
                 cards.WriteInteger(player.Num_AttackCardsInDeck);
@@ -626,7 +631,7 @@ namespace Wild_Card_Server
                     buffer.WriteInteger(cardPos);
                 }
 
-                Console.WriteLine("Player {0} has {1} HP and {2} armor", player.Username, player.Results.playerHP, player.Results.playerArmor);
+              
                 buffer.WriteInteger(player.Results.playerHP);
                 buffer.WriteInteger(player.Results.playerArmor);
 
@@ -726,6 +731,7 @@ namespace Wild_Card_Server
             StartMatch();
         }
 
+        
         #region For Testing
         private void TEMP_SendComboCards()
         {
