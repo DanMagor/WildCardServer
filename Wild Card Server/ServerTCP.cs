@@ -69,8 +69,17 @@ namespace Wild_Card_Server
             ByteBuffer buffer = new ByteBuffer();
             buffer.WriteInteger((data.GetUpperBound(0) - data.GetLowerBound(0)) + 1);
             buffer.WriteBytes(data);
-            clientObjects[connectionID].myStream.BeginWrite(buffer.ToArray(), 0, buffer.ToArray().Length, null, null);
-            buffer.Dispose();
+            if (clientObjects[connectionID].socket!=null)
+            {
+                clientObjects[connectionID].myStream.BeginWrite(buffer.ToArray(), 0, buffer.ToArray().Length, null, null);
+                buffer.Dispose();
+            }
+            else
+            {
+                //TODO: Check that is good solution
+                clientObjects[connectionID] = new ClientObject(null, 0);
+                throw new SocketException(connectionID);
+            }
         }
 
 

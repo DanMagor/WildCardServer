@@ -9,6 +9,7 @@ using System.Runtime.Remoting.Messaging;
 using UnityEngine;
 using UnityEngineInternal;
 using Random = System.Random;
+using System.Net.Sockets;
 
 namespace Wild_Card_Server
 {
@@ -64,12 +65,21 @@ namespace Wild_Card_Server
 
         public void StartMatch()
         {
-            InitializeMatch();
-            //Wait while both clients load Match Level
-            while (!Player1.isReady || !Player2.isReady) { }
-            isActive = true;
-            FormDecks(); //form classic decks for players; For test: // FormTestDecks();
-            PlayRound();
+            try
+            {
+                InitializeMatch();
+                //Wait while both clients load Match Level
+                while (!Player1.isReady || !Player2.isReady) { }
+                isActive = true;
+                FormDecks(); //form classic decks for players; For test: // FormTestDecks();
+                PlayRound();
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine("Disconnect from player " + e.ErrorCode);
+                var winner = Player1.ConnectionId == e.ErrorCode ? Player2 : Player1;
+                ServerTCP.PACKET_Match_FinishGame(winner.ConnectionId, winner.Username);
+            }
         }
         public void ToggleCardSelection(ByteBuffer data)
         {
